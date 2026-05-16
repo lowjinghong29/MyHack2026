@@ -35,3 +35,5 @@ build/
 credentials.json
 token.json
 service-account.json
+.superpowers/
+frontend/dist/
