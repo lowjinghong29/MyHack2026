@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Link2, Sparkles, Clock, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, Link2, Sparkles, Clock, UserPlus, AlertTriangle } from 'lucide-react';
 
 const navItems = [
   { label: 'Overview', items: [
@@ -13,6 +13,9 @@ const navItems = [
   ]},
   { label: 'Onboarding', items: [
     { to: '/register', icon: UserPlus, label: 'Register' },
+  ]},
+  { label: 'Admin', items: [
+    { to: '/admin/flags', icon: AlertTriangle, label: 'Flags' },
   ]},
 ];
 
