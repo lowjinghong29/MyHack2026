@@ -11,7 +11,10 @@ const SHEETS = {
   INTERACTIONS: 'Interactions',
   NUDGE_LOG: 'Nudge_Log',
   PENDING_NUDGES: 'Pending_Nudges',
-  MATCH_HISTORY: 'Match_History'
+  MATCH_HISTORY: 'Match_History',
+  MILESTONES: 'Milestones',
+  MONTHLY_REPORTS: 'Monthly_Reports',
+  OUTCOMES: 'Outcomes'
 };
 
 /**
@@ -27,6 +30,10 @@ function onOpen() {
     .addItem('Send Approved Nudges', 'sendApprovedNudges')
     .addSeparator()
     .addItem('Setup Match_History sheet', 'setupMatchHistorySheet')
+    .addItem('Setup All Programme Sheets', 'setupAllProgrammeSheets')
+    .addSeparator()
+    .addItem('Record Outcome (demo)', 'recordOutcomeDemo')
+    .addItem('Generate AI Analytics', 'generateAnalyticsSummary')
     .addToUi();
 }
 
@@ -158,7 +165,7 @@ function doGet(e) {
       return i.Linkage_ID === idParam;
     });
   } else {
-    var validSheets = ['Entities', 'Linkages', 'Interactions'];
+    var validSheets = ['Entities', 'Linkages', 'Interactions', 'Match_History', 'Milestones', 'Monthly_Reports', 'Outcomes'];
     if (validSheets.indexOf(sheetParam) === -1) {
       return ContentService.createTextOutput(JSON.stringify({ error: 'Invalid sheet' }))
         .setMimeType(ContentService.MimeType.JSON);

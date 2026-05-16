@@ -180,10 +180,15 @@ function autoApproveMatch(matchId, match) {
 
   updateCell(SHEETS.MATCH_HISTORY, 'Match_ID', matchId, 'Final_Status', 'APPROVED');
 
+  // Phase 4: Auto-create milestones for the new linkage
+  try { createMilestonesForLinkage(linkageId, match.Linkage_Type || 'Mentorship'); } catch (e) {
+    Logger.log('Milestone creation skipped: ' + e.message);
+  }
+
   // Send confirmation emails
   sendConfirmationEmails(match.Company_ID, match.Mentor_ID, linkageId, match.Linkage_Type);
 
-  Logger.log(matchId + ': approved → linkage ' + linkageId + ' created');
+  Logger.log(matchId + ': approved → linkage ' + linkageId + ' created with milestones');
   return { matchId: matchId, status: 'APPROVED', linkageId: linkageId };
 }
 
