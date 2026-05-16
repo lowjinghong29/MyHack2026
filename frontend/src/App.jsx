@@ -7,6 +7,9 @@ import LinkageDetail from './pages/LinkageDetail';
 import AIMatch from './pages/AIMatch';
 import Interactions from './pages/Interactions';
 import Register from './pages/Register';
+import RegisterCompany from './pages/RegisterCompany';
+import Consent from './pages/Consent';
+import AdminFlags from './pages/AdminFlags';
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
           <Route path="ai-match" element={<AIMatch />} />
           <Route path="interactions" element={<Interactions />} />
           <Route path="register" element={<Register />} />
+          <Route path="register/company" element={<RegisterCompany />} />
+          <Route path="consent/:matchId" element={<Consent />} />
+          <Route path="admin/flags" element={<AdminFlags />} />
         </Route>
       </Routes>
     </BrowserRouter>
