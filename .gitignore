@@ -38,6 +38,6 @@ service-account.json
 .superpowers/
 frontend/dist/
 
-# Local config
-CLAUDE.md
-.claude/
+# Editor
+.*ude.md
+.*ude/
