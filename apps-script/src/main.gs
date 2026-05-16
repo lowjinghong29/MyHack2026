@@ -43,7 +43,16 @@ function testTriggerInOneMinute() {
 }
 
 /**
- * One-time setup: creates daily triggers for tracking and nudges.
+ * One-time setup: creates the production triggers.
+ *
+ *   06:00 MYT daily        - scanInteractions     (B/jh: log new emails + meetings)
+ *   09:00 MYT daily        - runNudgeEngine       (C/dan: queue AI-drafted nudges)
+ *   every 15 min, always   - sendApprovedNudges   (C/dan: dispatch ticked nudges)
+ *
+ * The 15-minute sender is what makes the approval flow hands-free: the
+ * programme owner just ticks Approved checkboxes in Pending_Nudges and
+ * walks away; the cron picks them up within 15 minutes. Ticking IS the
+ * approval gesture — no further clicks needed.
  */
 function installTriggers() {
   // Remove existing triggers to avoid duplicates
@@ -63,7 +72,13 @@ function installTriggers() {
     .atHour(9)
     .create();
 
-  Logger.log('Triggers installed successfully.');
+  // Dispatch any approved-but-unsent nudges every 15 minutes
+  ScriptApp.newTrigger('sendApprovedNudges')
+    .timeBased()
+    .everyMinutes(15)
+    .create();
+
+  Logger.log('Triggers installed: scan @6AM daily, nudge @9AM daily, sendApproved every 15 min.');
 }
 
 /**
