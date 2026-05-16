@@ -1,5 +1,4 @@
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
-const MATCHER_URL = import.meta.env.VITE_GEMINI_MATCHER_URL;
 
 /**
  * Fetches all data (entities, linkages, interactions) from the Apps Script web app.
@@ -36,10 +35,11 @@ export async function fetchLinkageDetail(linkageId) {
  * @param {'Mentorship'|'Partnership'|'Investment'} matchType
  */
 export async function requestAIMatch(entityId, matchType) {
-  const res = await fetch(MATCHER_URL, {
+  // Call Apps Script Gemini matcher (no separate Cloud Function needed)
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entityId, matchType }),
+    body: JSON.stringify({ action: 'aiMatch', entityId, matchType }),
   });
   if (!res.ok) throw new Error('AI match request failed');
   return res.json();

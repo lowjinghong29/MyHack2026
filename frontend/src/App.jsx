@@ -6,6 +6,7 @@ import Linkages from './pages/Linkages';
 import LinkageDetail from './pages/LinkageDetail';
 import AIMatch from './pages/AIMatch';
 import Interactions from './pages/Interactions';
+import Register from './pages/Register';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="linkages/:id" element={<LinkageDetail />} />
           <Route path="ai-match" element={<AIMatch />} />
           <Route path="interactions" element={<Interactions />} />
+          <Route path="register" element={<Register />} />
         </Route>
       </Routes>
     </BrowserRouter>
