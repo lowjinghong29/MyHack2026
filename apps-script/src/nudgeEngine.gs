@@ -25,12 +25,14 @@ function getNudgeConfig() {
 }
 
 /**
- * Main entry: scans all active linkages, writes Health_Status back to
- * each row, and dispatches (or queues) a nudge for any past the threshold.
+ * Main entry: scans all active linkages and dispatches (or queues) a
+ * nudge for any past the threshold. Computes a categorical health bucket
+ * per linkage purely for stats / Chat summary; the dashboard derives the
+ * same bucket from Last_Interaction_Date directly (AppSheet virtual col).
  *
  * @param {{sendThresholdOverride?: number}} [opts] one-off overrides for demos.
- *   Only affects the send decision; Health_Status always uses the configured
- *   threshold so the dashboard shows a true mix of Healthy/At_Risk/Dormant.
+ *   Only affects the send decision; health bucketing always uses the
+ *   configured threshold.
  * @returns {{scanned:number, atRisk:number, dormant:number, queued:number, sent:number}}
  */
 function runNudgeEngine(opts) {
@@ -55,8 +57,6 @@ function runNudgeEngine(opts) {
     const daysSince = Math.floor((now - lastInteraction) / (1000 * 60 * 60 * 24));
 
     const healthStatus = computeHealthStatus(daysSince, healthThreshold);
-    updateCell(SHEETS.LINKAGES, 'Linkage_ID', linkage.Linkage_ID,
-      'Health_Status', healthStatus);
 
     if (healthStatus === 'At_Risk') stats.atRisk++;
     if (healthStatus === 'Dormant') stats.dormant++;
@@ -91,18 +91,17 @@ function runNudgeEngine(opts) {
 
 /**
  * Sheet-menu entry point: forces send threshold = 0 so the engine fires
- * every active linkage during a live pitch demo. Health_Status still uses
- * the configured threshold, so the dashboard shows a real Healthy/At_Risk/
- * Dormant mix instead of marking everything Dormant.
+ * every active linkage during a live pitch demo.
  */
 function runNudgeEngineDemo() {
   return runNudgeEngine({ sendThresholdOverride: 0 });
 }
 
 /**
- * Maps days-since-interaction to a categorical health status for the
- * Linkages dashboard. Distinct from Health_Score (numeric, owned by
- * interactionTracker) — this one drives FR-16 at-risk flags.
+ * Maps days-since-interaction to a categorical health bucket. Used for
+ * run-summary stats and Chat alerts; the live Linkages dashboard derives
+ * the same buckets from Last_Interaction_Date via an AppSheet virtual
+ * column, so this never gets written back to the sheet.
  */
 function computeHealthStatus(daysSince, threshold) {
   if (daysSince < threshold) return 'Healthy';
