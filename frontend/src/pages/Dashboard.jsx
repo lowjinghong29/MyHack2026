@@ -32,7 +32,7 @@ function buildChartData(interactions) {
     const key = new Date(raw).toISOString().slice(0, 10);
     if (key in counts) counts[key]++;
   });
-  return Object.entries(counts).map(([date, value], idx) => ({
+  return Object.entries(counts).map(([, value], idx) => ({
     day: String(idx + 1),
     value,
   }));
