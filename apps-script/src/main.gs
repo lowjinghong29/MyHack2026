@@ -4,15 +4,55 @@
  * Sets up time-driven triggers for interaction tracking and nudge engine.
  */
 
-const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+const SPREADSHEET_ID = '1wc5ecKu_Wfq7Y0Lvztpcbzanbx87N_8VIx5ZU6LfQsg';
 const SHEETS = {
   ENTITIES: 'Entities',
   LINKAGES: 'Linkages',
-  INTERACTIONS: 'Interactions'
+  INTERACTIONS: 'Interactions',
+  NUDGE_LOG: 'Nudge_Log',
+  PENDING_NUDGES: 'Pending_Nudges'
 };
 
 /**
- * One-time setup: creates daily triggers for tracking and nudges.
+ * Adds an "EcoLink" menu to the spreadsheet so a judge can run the demo
+ * with a single click. Bound automatically when the sheet opens.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('EcoLink')
+    .addItem('Run Nudge Engine (live)', 'runNudgeEngine')
+    .addItem('Run Nudge Demo (threshold = 0)', 'runNudgeEngineDemo')
+    .addSeparator()
+    .addItem('Send Approved Nudges', 'sendApprovedNudges')
+    .addToUi();
+}
+
+/**
+ * Schedules a one-off test trigger that fires runNudgeEngine 1 minute
+ * from now. Lets you prove the automation path works without waiting
+ * until 9 AM. Does NOT touch the daily trigger; one-off triggers
+ * self-delete after firing.
+ */
+function testTriggerInOneMinute() {
+  const fireAt = new Date(Date.now() + 60 * 1000);
+  ScriptApp.newTrigger('runNudgeEngine')
+    .timeBased()
+    .at(fireAt)
+    .create();
+  Logger.log('Test trigger scheduled. runNudgeEngine will fire at ' + fireAt);
+}
+
+/**
+ * One-time setup: creates the production triggers.
+ *
+ *   06:00 MYT daily        - scanInteractions     (B/jh: log new emails + meetings)
+ *   09:00 MYT daily        - runNudgeEngine       (C/dan: queue AI-drafted nudges)
+ *   every 15 min, always   - sendApprovedNudges   (C/dan: dispatch ticked nudges)
+ *
+ * The 15-minute sender is what makes the approval flow hands-free: the
+ * programme owner just ticks Approved checkboxes in Pending_Nudges and
+ * walks away; the cron picks them up within 15 minutes. Ticking IS the
+ * approval gesture — no further clicks needed.
  */
 function installTriggers() {
   // Remove existing triggers to avoid duplicates
@@ -32,7 +72,13 @@ function installTriggers() {
     .atHour(9)
     .create();
 
-  Logger.log('Triggers installed successfully.');
+  // Dispatch any approved-but-unsent nudges every 15 minutes
+  ScriptApp.newTrigger('sendApprovedNudges')
+    .timeBased()
+    .everyMinutes(15)
+    .create();
+
+  Logger.log('Triggers installed: scan @6AM daily, nudge @9AM daily, sendApproved every 15 min.');
 }
 
 /**
@@ -81,4 +127,42 @@ function updateCell(sheetName, keyColumn, keyValue, targetColumn, newValue) {
     }
   }
   return false;
+}
+
+/**
+ * Web App endpoint — serves sheet data as JSON.
+ * Deploy as: Execute as "Me", Access "Anyone".
+ *
+ * Query params:
+ *   ?sheet=Entities | Linkages | Interactions
+ *   ?sheet=all  (returns all three)
+ *   ?sheet=Linkages&id=LNK-001  (single linkage with its interactions)
+ */
+function doGet(e) {
+  var sheetParam = (e && e.parameter && e.parameter.sheet) || 'all';
+  var idParam = e && e.parameter && e.parameter.id;
+  var result = {};
+
+  if (sheetParam === 'all') {
+    result.entities = getSheetData(SHEETS.ENTITIES);
+    result.linkages = getSheetData(SHEETS.LINKAGES);
+    result.interactions = getSheetData(SHEETS.INTERACTIONS);
+  } else if (sheetParam === 'Linkages' && idParam) {
+    var linkages = getSheetData(SHEETS.LINKAGES);
+    var match = linkages.filter(function(l) { return l.Linkage_ID === idParam; });
+    result.linkage = match.length > 0 ? match[0] : null;
+    result.interactions = getSheetData(SHEETS.INTERACTIONS).filter(function(i) {
+      return i.Linkage_ID === idParam;
+    });
+  } else {
+    var validSheets = ['Entities', 'Linkages', 'Interactions'];
+    if (validSheets.indexOf(sheetParam) === -1) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'Invalid sheet' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    result[sheetParam.toLowerCase()] = getSheetData(sheetParam);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }

@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "ecolink-ai-433bf"
+  },
+  "targets": {
+    "ecolink-ai-433bf": {
+      "hosting": {
+        "dashboard": ["ecolink-erm"]
+      }
+    }
+  }
+}
