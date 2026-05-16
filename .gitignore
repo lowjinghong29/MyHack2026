@@ -38,6 +38,6 @@ service-account.json
 .superpowers/
 frontend/dist/
 
-# AI tools
+# Local config
 CLAUDE.md
 .claude/
