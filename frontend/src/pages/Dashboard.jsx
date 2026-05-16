@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import { Users, Link2, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react';
 import { fetchAllData, buildEntityMap } from '../lib/api';
@@ -16,6 +16,15 @@ const badgeStyles = {
   'g-yellow': 'bg-g-yellow/15 text-g-yellow',
   'g-red':    'bg-g-red/15 text-g-red',
 };
+
+// BUG FIX #2: color by Interaction_Type instead of missing Sentiment_Score
+function interactionColor(type) {
+  if (!type) return 'g-yellow';
+  const t = type.toLowerCase();
+  if (t === 'meeting') return 'g-green';
+  if (t === 'email') return 'g-blue';
+  return 'g-yellow';
+}
 
 function buildChartData(interactions) {
   const counts = {};
@@ -38,7 +47,12 @@ function buildChartData(interactions) {
   }));
 }
 
-function buildActivityFeed(interactions, entityMap) {
+// BUG FIX #1: accept linkages array; resolve entity names via linkage lookup
+function buildActivityFeed(interactions, linkages, entityMap) {
+  // Build a fast Linkage_ID → linkage lookup (js-index-maps rule)
+  const linkageIndex = {};
+  linkages.forEach(l => { linkageIndex[l.Linkage_ID] = l; });
+
   const sorted = [...interactions].sort((a, b) => {
     const ta = new Date(a.Date || a.Timestamp || 0).getTime();
     const tb = new Date(b.Date || b.Timestamp || 0).getTime();
@@ -46,11 +60,11 @@ function buildActivityFeed(interactions, entityMap) {
   });
 
   return sorted.slice(0, 6).map(item => {
-    const entityA = entityMap[item.Entity_A_ID] || { Name: item.Entity_A_ID };
-    const entityB = entityMap[item.Entity_B_ID] || { Name: item.Entity_B_ID };
+    const linkage = linkageIndex[item.Linkage_ID] || {};
+    const entityA = entityMap[linkage.Entity_A_ID] || { Name: linkage.Entity_A_ID || '—' };
+    const entityB = entityMap[linkage.Entity_B_ID] || { Name: linkage.Entity_B_ID || '—' };
     const type = item.Interaction_Type || 'Interaction';
-    const score = Number(item.Sentiment_Score || 0);
-    const color = score >= 70 ? 'g-green' : score >= 40 ? 'g-yellow' : 'g-red';
+    const color = interactionColor(type);  // BUG FIX #2
     const raw = item.Date || item.Timestamp || '';
     const time = raw ? new Date(raw).toLocaleDateString() : '—';
 
@@ -63,37 +77,82 @@ function buildActivityFeed(interactions, entityMap) {
   });
 }
 
+// IMPROVEMENT #6: dynamic health ring color
+function healthColor(avg) {
+  if (avg >= 70) return { stroke: '#34a853', text: 'text-g-green' };
+  if (avg >= 40) return { stroke: '#fbbc04', text: 'text-g-yellow' };
+  return { stroke: '#ea4335', text: 'text-g-red' };
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [kpis, setKpis] = useState([]);
-  const [chartData, setChartData] = useState([]);
+  const [error, setError]     = useState(null);
+  const [kpis, setKpis]       = useState([]);
+  const [chartData, setChartData]     = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
-  const [avgHealth, setAvgHealth] = useState(0);
+  const [avgHealth, setAvgHealth]     = useState(0);
+  const [lastUpdated, setLastUpdated] = useState(null);  // IMPROVEMENT #5
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetchAllData()
       .then(({ entities, linkages, interactions }) => {
         const entityMap = buildEntityMap(entities);
 
+        // BUG FIX #3: compute real active / at-risk counts
+        const activeEntities = entities.filter(e => (e.Status || '').toLowerCase() === 'active').length;
         const atRisk = linkages.filter(l => Number(l.Health_Score) < 40).length;
         const totalHealth = linkages.reduce((acc, l) => acc + Number(l.Health_Score || 0), 0);
         const avg = linkages.length ? Math.round(totalHealth / linkages.length) : 0;
 
         setKpis([
-          { label: 'Total Entities',     value: entities.length,     change: '+12 this week',       icon: Users,         color: 'g-blue'   },
-          { label: 'Active Linkages',    value: linkages.length,     change: '+5 this week',        icon: Link2,         color: 'g-green'  },
-          { label: 'Interactions (30d)', value: interactions.length, change: '+28% vs last month',  icon: MessageSquare, color: 'g-yellow' },
-          { label: 'At-Risk Linkages',   value: atRisk,              change: 'Need attention',      icon: AlertTriangle, color: 'g-red',   isDown: true },
+          {
+            label: 'Total Entities',
+            value: entities.length,
+            change: `${activeEntities} active`,   // BUG FIX #3
+            icon: Users,
+            color: 'g-blue',
+          },
+          {
+            label: 'Active Linkages',
+            value: linkages.length,
+            change: `${atRisk} at-risk`,           // BUG FIX #3
+            icon: Link2,
+            color: 'g-green',
+          },
+          {
+            label: 'Interactions (30d)',
+            value: interactions.length,
+            change: '+28% vs last month',
+            icon: MessageSquare,
+            color: 'g-yellow',
+          },
+          {
+            label: 'At-Risk Linkages',
+            value: atRisk,
+            change: 'Need attention',
+            icon: AlertTriangle,
+            color: 'g-red',
+            isDown: true,
+          },
         ]);
 
         setAvgHealth(avg);
         setChartData(buildChartData(interactions));
-        setActivityFeed(buildActivityFeed(interactions, entityMap));
+        setActivityFeed(buildActivityFeed(interactions, linkages, entityMap)); // BUG FIX #1
+        setLastUpdated(new Date()); // IMPROVEMENT #5
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  // Initial load
+  useEffect(() => { load(); }, [load]);
+
+  // IMPROVEMENT #4: auto-refresh every 30 seconds
+  useEffect(() => {
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  }, [load]);
 
   if (loading) {
     return (
@@ -112,12 +171,34 @@ export default function Dashboard() {
     );
   }
 
+  // IMPROVEMENT #5: format lastUpdated
+  const syncLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : null;
+
+  // IMPROVEMENT #6: resolve health ring color
+  const ring = healthColor(avgHealth);
+
   return (
     <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold">Dashboard</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold">Dashboard</h1>
+          {/* IMPROVEMENT #4: Live indicator */}
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-g-green opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-g-green" />
+            </span>
+            <span className="text-[11px] font-medium text-g-green">Live</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* IMPROVEMENT #5: lastUpdated timestamp */}
+          {syncLabel && (
+            <span className="text-[11px] text-text-muted">Last synced: {syncLabel}</span>
+          )}
           <button className="px-4 py-2 text-xs bg-white/5 text-text-secondary border border-border rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
             Export
           </button>
@@ -171,7 +252,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Health Ring */}
+        {/* Health Ring — IMPROVEMENT #6: dynamic color */}
         <div className="bg-bg-card border border-border rounded-xl p-4.5 flex flex-col items-center justify-center">
           <div className="flex justify-between items-center w-full mb-3">
             <span className="text-[13px] font-semibold">Avg Health</span>
@@ -180,12 +261,16 @@ export default function Dashboard() {
           <div className="relative w-24 h-24">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
               <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#34a853" strokeWidth="8"
+              <circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke={ring.stroke}
+                strokeWidth="8"
                 strokeDasharray={`${avgHealth * 2.64} ${264 - avgHealth * 2.64}`}
-                strokeLinecap="round" />
+                strokeLinecap="round"
+              />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-g-green">{avgHealth}</span>
+              <span className={`text-2xl font-bold ${ring.text}`}>{avgHealth}</span>
               <span className="text-[9px] text-text-muted">/ 100</span>
             </div>
           </div>

@@ -15,13 +15,26 @@ const navItems = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-[220px] bg-bg-card border-r border-border flex-shrink-0 flex flex-col">
+    <aside
+      className="w-[220px] flex-shrink-0 flex flex-col border-r border-border"
+      style={{ background: 'linear-gradient(180deg, var(--color-bg-card) 0%, color-mix(in srgb, var(--color-bg-card) 85%, var(--color-bg-primary)) 100%)' }}
+    >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-g-blue to-g-green flex items-center justify-center text-white font-bold text-sm">
+        <div
+          className="w-8 h-8 rounded-lg bg-gradient-to-br from-g-blue to-g-green flex items-center justify-center text-white font-bold text-sm"
+          style={{ boxShadow: '0 0 12px 2px rgba(66,133,244,0.25)' }}
+        >
           E
         </div>
-        <span className="font-bold text-base text-text-primary">EcoLink AI</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold text-base text-text-primary">EcoLink AI</span>
+          {/* Live data pulsing indicator */}
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-g-green opacity-60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-g-green" />
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -37,10 +50,10 @@ export default function Sidebar() {
                 to={item.to}
                 end={item.to === '/'}
                 className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-5 py-2.5 text-[13px] border-l-[3px] transition-all cursor-pointer ${
+                  `flex items-center gap-2.5 px-5 py-2.5 text-[13px] border-l-[3px] transition-all duration-150 cursor-pointer ${
                     isActive
                       ? 'bg-g-blue/8 text-g-blue border-l-g-blue font-semibold'
-                      : 'text-text-secondary border-l-transparent hover:bg-white/[0.03] hover:text-text-primary'
+                      : 'text-text-secondary border-l-transparent hover:bg-white/[0.04] hover:text-text-primary hover:translate-x-px hover:border-l-border'
                   }`
                 }
               >
@@ -54,7 +67,14 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-border">
-        <div className="text-[10px] text-text-muted">Powered by Gemini AI</div>
+        <div className="flex items-center gap-1.5 mb-0.5">
+          {/* Google color dots */}
+          <span className="w-1.5 h-1.5 rounded-full bg-g-blue" />
+          <span className="w-1.5 h-1.5 rounded-full bg-g-red" />
+          <span className="w-1.5 h-1.5 rounded-full bg-g-yellow" />
+          <span className="w-1.5 h-1.5 rounded-full bg-g-green" />
+          <span className="text-[10px] text-text-muted ml-0.5">Powered by Google AI</span>
+        </div>
         <div className="text-[10px] text-text-muted">MyHack 2026</div>
       </div>
     </aside>
