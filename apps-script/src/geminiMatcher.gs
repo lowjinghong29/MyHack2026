@@ -43,7 +43,7 @@ function findMatches(entityId, matchType) {
       contentType: 'application/json',
       payload: JSON.stringify({
         contents: [{ parts: [{ text: promptInfo.prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 800 }
+        generationConfig: { temperature: 0.4, maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } }
       }),
       muteHttpExceptions: true
     });
@@ -55,18 +55,28 @@ function findMatches(entityId, matchType) {
     }
 
     var json = JSON.parse(response.getContentText());
-    var text = json.candidates
+    var parts = json.candidates
       && json.candidates[0]
       && json.candidates[0].content
-      && json.candidates[0].content.parts
-      && json.candidates[0].content.parts[0]
-      && json.candidates[0].content.parts[0].text;
+      && json.candidates[0].content.parts;
 
-    if (!text) return { error: 'Empty Gemini response', matches: [] };
+    if (!parts || parts.length === 0) return { error: 'Empty Gemini response', matches: [] };
 
-    var clean = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    // Find the last part with text (gemini-2.5-flash may have thinking parts before text)
+    var text = '';
+    for (var i = parts.length - 1; i >= 0; i--) {
+      if (parts[i].text) { text = parts[i].text; break; }
+    }
+
+    if (!text) return { error: 'No text in Gemini response', matches: [] };
+
+    // Strip code fences and find JSON array
+    var clean = text.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
     var jsonMatch = clean.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: 'Could not parse Gemini response', matches: [] };
+    if (!jsonMatch) {
+      Logger.log('Gemini raw text: ' + text.substring(0, 300));
+      return { error: 'Could not parse Gemini response', matches: [] };
+    }
 
     var matches = JSON.parse(jsonMatch[0]);
     Logger.log('AI Match v' + promptInfo.version + ': ' + matches.length + ' results for ' + entityId);
