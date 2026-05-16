@@ -28,6 +28,21 @@ function onOpen() {
 }
 
 /**
+ * Schedules a one-off test trigger that fires runNudgeEngine 1 minute
+ * from now. Lets you prove the automation path works without waiting
+ * until 9 AM. Does NOT touch the daily trigger; one-off triggers
+ * self-delete after firing.
+ */
+function testTriggerInOneMinute() {
+  const fireAt = new Date(Date.now() + 60 * 1000);
+  ScriptApp.newTrigger('runNudgeEngine')
+    .timeBased()
+    .at(fireAt)
+    .create();
+  Logger.log('Test trigger scheduled. runNudgeEngine will fire at ' + fireAt);
+}
+
+/**
  * One-time setup: creates daily triggers for tracking and nudges.
  */
 function installTriggers() {
