@@ -58,7 +58,7 @@ export default function AIMatch() {
         <Sparkles size={20} className="text-accent" />
         <h1 className="text-xl font-bold">AI Match Request</h1>
         <span className="text-[10px] px-2 py-0.5 rounded-md bg-accent/15 text-accent font-semibold ml-2">
-          Powered by Gemini 2.0
+          Powered by Gemini 3.1
         </span>
       </div>
 

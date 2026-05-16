@@ -40,7 +40,7 @@ function findMatches(entityId, matchType) {
   }
 
   // Call Gemini
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
 
   try {
     var response = UrlFetchApp.fetch(url, {
