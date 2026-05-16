@@ -4,7 +4,7 @@
  * Sets up time-driven triggers for interaction tracking and nudge engine.
  */
 
-const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+const SPREADSHEET_ID = '1wc5ecKu_Wfq7Y0Lvztpcbzanbx87N_8VIx5ZU6LfQsg';
 const SHEETS = {
   ENTITIES: 'Entities',
   LINKAGES: 'Linkages',
