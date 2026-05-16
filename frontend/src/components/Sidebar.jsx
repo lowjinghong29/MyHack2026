@@ -13,7 +13,7 @@ const navItems = [
   ]},
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   return (
     <aside
       className="w-[220px] border-r border-border flex-shrink-0 flex flex-col"
@@ -47,6 +47,7 @@ export default function Sidebar() {
                 key={item.to}
                 to={item.to}
                 end={item.to === '/'}
+                onClick={onNavigate}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 px-5 py-2.5 text-[13px] border-l-[3px] transition-all duration-200 cursor-pointer ${
                     isActive

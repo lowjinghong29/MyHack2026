@@ -34,7 +34,7 @@ export default function Interactions() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <Loader2 size={28} className="text-g-blue animate-spin" />
+        <Loader2 size={28} className="text-accent animate-spin" />
         <span className="text-sm text-text-muted">Loading interactions...</span>
       </div>
     );
@@ -52,7 +52,7 @@ export default function Interactions() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <Clock size={20} className="text-g-blue" />
+          <Clock size={20} className="text-accent" />
           <h1 className="text-xl font-bold">Interaction Timeline</h1>
         </div>
         <div className="flex gap-1.5">
@@ -62,7 +62,7 @@ export default function Interactions() {
               onClick={() => setTypeFilter(type)}
               className={`px-3 py-2 text-[11px] rounded-lg font-medium transition-colors cursor-pointer ${
                 typeFilter === type
-                  ? 'bg-g-blue text-white'
+                  ? 'bg-accent text-white'
                   : 'bg-bg-card border border-border text-text-secondary hover:bg-bg-card-hover'
               }`}
             >
@@ -93,15 +93,15 @@ export default function Interactions() {
               return (
                 <div key={interaction.Interaction_ID} className="flex gap-4 relative">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                    isMeeting ? 'bg-g-green/15' : 'bg-g-blue/15'
+                    isMeeting ? 'bg-g-green/15' : 'bg-accent/15'
                   }`}>
-                    <Icon size={16} className={isMeeting ? 'text-g-green' : 'text-g-blue'} />
+                    <Icon size={16} className={isMeeting ? 'text-g-green' : 'text-accent'} />
                   </div>
                   <div className="flex-1 bg-bg-card border border-border rounded-xl p-4 hover:bg-bg-card-hover transition-colors cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                          isMeeting ? 'bg-g-green/15 text-g-green' : 'bg-g-blue/15 text-g-blue'
+                          isMeeting ? 'bg-g-green/15 text-g-green' : 'bg-accent/15 text-accent'
                         }`}>
                           {interaction.Interaction_Type}
                         </span>

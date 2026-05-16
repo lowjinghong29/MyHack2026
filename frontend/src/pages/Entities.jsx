@@ -60,7 +60,7 @@ export default function Entities() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-bold">Entity Directory</h1>
-        <button className="px-4 py-2 text-xs bg-g-blue text-white rounded-lg font-semibold hover:bg-g-blue/90 transition-colors cursor-pointer flex items-center gap-1.5">
+        <button className="px-4 py-2 text-xs bg-accent text-white rounded-lg font-semibold hover:bg-accent-dim transition-colors cursor-pointer flex items-center gap-1.5">
           <Plus size={14} /> Add Entity
         </button>
       </div>
@@ -74,7 +74,7 @@ export default function Entities() {
             placeholder="Search by name, email, or tags..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-bg-card border border-border rounded-lg py-2.5 pl-9 pr-4 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-g-blue/50 transition-colors"
+            className="w-full bg-bg-card border border-border rounded-lg py-2.5 pl-9 pr-4 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 transition-colors"
           />
         </div>
         <div className="flex gap-1.5">
@@ -84,7 +84,7 @@ export default function Entities() {
               onClick={() => setRoleFilter(role)}
               className={`px-3 py-2 text-[11px] rounded-lg font-medium transition-colors cursor-pointer ${
                 roleFilter === role
-                  ? 'bg-g-blue text-white'
+                  ? 'bg-accent text-white'
                   : 'bg-bg-card border border-border text-text-secondary hover:bg-bg-card-hover'
               }`}
             >
@@ -117,7 +117,7 @@ export default function Entities() {
                 <tr key={entity.Entity_ID} className="border-b border-border last:border-b-0 hover:bg-bg-card-hover transition-colors cursor-pointer">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-g-blue/15 flex items-center justify-center text-g-blue text-xs font-bold">
+                      <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center text-accent text-xs font-bold">
                         {initials}
                       </div>
                       <div>
@@ -135,7 +135,7 @@ export default function Entities() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
                       {tags.map(tag => (
-                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-text-muted">
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-accent/5 text-text-muted">
                           {tag}
                         </span>
                       ))}

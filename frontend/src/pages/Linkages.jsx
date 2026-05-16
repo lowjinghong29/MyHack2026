@@ -25,9 +25,9 @@ function HealthBar({ score }) {
 }
 
 const typeColor = {
-  Mentorship: 'bg-g-blue/15 text-g-blue',
-  Partnership: 'bg-g-green/15 text-g-green',
-  Investment: 'bg-g-yellow/15 text-g-yellow',
+  Mentorship: 'bg-accent/15 text-accent',
+  Partnership: 'bg-g-blue/15 text-g-blue',
+  Investment: 'bg-gold/15 text-gold',
 };
 
 export default function Linkages() {
@@ -114,7 +114,7 @@ export default function Linkages() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/linkages/${linkage.Linkage_ID}`}
-                      className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-g-blue transition-colors cursor-pointer inline-flex"
+                      className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-accent transition-colors cursor-pointer inline-flex"
                     >
                       <ExternalLink size={14} />
                     </Link>
