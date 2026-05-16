@@ -615,6 +615,11 @@ function analyseAndLogPatterns() {
  * Populates demo Match_History and Monthly_Reports data.
  */
 function populateDemoMatchAndReports() {
+  // Ensure all sheets exist first
+  setupAllProgrammeSheets();
+  setupMatchHistorySheet();
+  setupAILogSheet();
+
   // Demo Match History — 5 completed matches
   var matchData = [
     ['MATCH-DEMO001', 'ENT-C01', 'ENT-M02', 'Mentorship', 95, 'Strong FinTech expertise alignment with BNPL product needs', 'ACCEPTED', 'ACCEPTED', '', 'APPROVED', '', '2024-03-10'],
