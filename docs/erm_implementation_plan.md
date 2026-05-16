@@ -47,7 +47,7 @@ Implement the following strict relational tables in the database (Google Sheets)
 
 ---
 
-### 4. Phased Implementation Steps for Claude Code
+### 4. Phased Implementation Steps
 
 #### Phase 1: Foundation & Platform Logic (AppSheet + Sheets)
 **Goal:** Eliminate manual spreadsheets and enforce strict relationship logic.
@@ -80,7 +80,7 @@ Implement the following strict relational tables in the database (Google Sheets)
 
 ---
 
-### 5. Initialization Instructions for Claude
-* Please review this document and confirm understanding of the 3-table schema.
-* Start by writing the Apps Script `.js` files locally for Phase 2 and Phase 3, ensuring they are structured properly to be pushed via `clasp`.
+### 5. Getting Started
+* Review this document and confirm understanding of the 3-table schema.
+* Write the Apps Script `.js` files locally for Phase 2 and Phase 3, ensuring they are structured properly to be pushed via `clasp`.
 * Draft the Gemini API wrapper function in Python or Node.js for Phase 4.
