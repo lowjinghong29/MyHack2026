@@ -299,7 +299,7 @@ function tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config) {
     `Do not invent facts not in the data above. Do not include placeholders like [your name].`;
 
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-    'gemini-2.0-flash:generateContent?key=' + encodeURIComponent(config.geminiApiKey);
+    'gemini-2.5-flash:generateContent?key=' + encodeURIComponent(config.geminiApiKey);
 
   try {
     const response = UrlFetchApp.fetch(url, {
