@@ -68,11 +68,11 @@ function runNudgeEngine(opts) {
       return;
     }
 
-    const bodyA = buildNudgeBody(entityA.Name, entityB.Name, linkage.Linkage_Type, daysSince);
-    const bodyB = buildNudgeBody(entityB.Name, entityA.Name, linkage.Linkage_Type, daysSince);
+    const a = buildBestNudgeBody(entityA, entityB, linkage, daysSince, config);
+    const b = buildBestNudgeBody(entityB, entityA, linkage, daysSince, config);
 
-    if (dispatchNudge(linkage, entityA, bodyA, false, daysSince, config)) stats.sent++;
-    if (dispatchNudge(linkage, entityB, bodyB, false, daysSince, config)) stats.sent++;
+    if (dispatchNudge(linkage, entityA, a.body, a.aiUsed, daysSince, config)) stats.sent++;
+    if (dispatchNudge(linkage, entityB, b.body, b.aiUsed, daysSince, config)) stats.sent++;
   });
 
   postChatSummary(stats, config);
@@ -163,6 +163,105 @@ function postChatSummary(stats, config) {
   } catch (err) {
     Logger.log('Chat webhook post failed: ' + err.message);
   }
+}
+
+/**
+ * Returns the best available nudge body: a personalised one from Gemini
+ * if an API key is configured and the call succeeds, otherwise the
+ * deterministic static template. Returns {body, aiUsed} so the log can
+ * record which path was taken.
+ */
+function buildBestNudgeBody(recipient, partner, linkage, daysSince, config) {
+  if (config.geminiApiKey) {
+    const aiBody = tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config);
+    if (aiBody) return { body: aiBody, aiUsed: true };
+  }
+  return {
+    body: buildNudgeBody(recipient.Name, partner.Name, linkage.Linkage_Type, daysSince),
+    aiUsed: false
+  };
+}
+
+/**
+ * Calls Gemini to produce a personalised HTML email body for one
+ * recipient. Returns the HTML string on success, null on any failure
+ * (parse error, quota, timeout) so the caller falls back to the static
+ * template. Prompt shape mirrors cloud-functions/gemini-matcher.
+ */
+function tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config) {
+  const prompt =
+    `You are an ecosystem relationship coach writing a brief, warm re-engagement email.\n\n` +
+    `RECIPIENT:\n` +
+    `- Name: ${recipient.Name}\n` +
+    `- Role: ${recipient.Role}\n` +
+    `- Industry Tags: ${recipient.Industry_Tags || ''}\n` +
+    `- Expertise/Needs: ${recipient.Expertise_Needs || ''}\n\n` +
+    `PARTNER (their connection that has gone quiet):\n` +
+    `- Name: ${partner.Name}\n` +
+    `- Role: ${partner.Role}\n` +
+    `- Industry Tags: ${partner.Industry_Tags || ''}\n` +
+    `- Expertise/Needs: ${partner.Expertise_Needs || ''}\n\n` +
+    `CONTEXT:\n` +
+    `- Relationship type: ${linkage.Linkage_Type}\n` +
+    `- Days since last interaction: ${daysSince}\n\n` +
+    `Write the HTML body of a re-engagement email to the recipient. Requirements:\n` +
+    `- Addressed to ${recipient.Name} by name, warm but professional\n` +
+    `- 3 short sentences in the main paragraph\n` +
+    `- Mention ${partner.Name} by name\n` +
+    `- Suggest ONE concrete next step grounded in the partner's expertise/needs above\n` +
+    `- Total under 120 words\n` +
+    `- Return ONLY the HTML body wrapped in a single <div> with simple inline styles. ` +
+    `No <html>/<head>/<body> tags, no markdown code fences.\n\n` +
+    `Do not invent facts not in the data above. Do not include placeholders like [your name].`;
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+    'gemini-2.0-flash:generateContent?key=' + encodeURIComponent(config.geminiApiKey);
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+      }),
+      muteHttpExceptions: true
+    });
+
+    const code = response.getResponseCode();
+    if (code >= 400) {
+      Logger.log('Gemini HTTP ' + code + ': ' + response.getContentText().slice(0, 200));
+      return null;
+    }
+
+    const json = JSON.parse(response.getContentText());
+    const text = json.candidates &&
+      json.candidates[0] &&
+      json.candidates[0].content &&
+      json.candidates[0].content.parts &&
+      json.candidates[0].content.parts[0] &&
+      json.candidates[0].content.parts[0].text;
+
+    if (!text) {
+      Logger.log('Gemini returned empty body');
+      return null;
+    }
+
+    return stripCodeFences(text).trim();
+  } catch (err) {
+    Logger.log('Gemini call failed: ' + err.message);
+    return null;
+  }
+}
+
+/**
+ * Removes ```html ... ``` (or ```...```) wrappers that Gemini sometimes
+ * adds even when told not to.
+ */
+function stripCodeFences(text) {
+  return text
+    .replace(/^```(?:html)?\s*\n?/i, '')
+    .replace(/\n?```\s*$/i, '');
 }
 
 /**
