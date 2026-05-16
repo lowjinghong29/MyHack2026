@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
-import { fetchSheet, requestAIMatch, sendConsent } from '../lib/api';
+import { Sparkles, ArrowRight, Loader2, Brain, TrendingUp, Zap } from 'lucide-react';
+import { fetchSheet, requestAIMatch, sendConsent, getLearningStatus } from '../lib/api';
 
 export default function AIMatch() {
   const [entities, setEntities] = useState([]);
@@ -12,12 +12,17 @@ export default function AIMatch() {
   const [error, setError] = useState(null);
   const [consentSending, setConsentSending] = useState(null);
   const [consentResult, setConsentResult] = useState(null);
+  const [learningStatus, setLearningStatus] = useState(null);
+  const [matchMeta, setMatchMeta] = useState(null);
 
   useEffect(() => {
     fetchSheet('Entities')
       .then(data => setEntities(data.entities || []))
       .catch(() => setEntities([]))
       .finally(() => setEntitiesLoading(false));
+    getLearningStatus()
+      .then(setLearningStatus)
+      .catch(() => {});
   }, []);
 
   const handleMatch = async () => {
@@ -27,6 +32,7 @@ export default function AIMatch() {
     try {
       const data = await requestAIMatch(selectedEntity, matchType);
       setResults(data.matches || []);
+      setMatchMeta({ promptVersion: data.promptVersion, promptType: data.promptType, patternsUsed: data.patternsUsed, outcomesAnalysed: data.outcomesAnalysed });
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -207,11 +213,105 @@ export default function AIMatch() {
         </div>
       )}
 
+      {/* Match Metadata — shows after results */}
+      {matchMeta && results && (
+        <div className="bg-bg-card border border-accent/20 rounded-xl p-4 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain size={14} className="text-accent" />
+            <span className="text-[13px] font-semibold">AI Learning Proof</span>
+          </div>
+          <div className="grid grid-cols-4 gap-3 text-[11px]">
+            <div className="bg-bg-primary rounded-lg p-3">
+              <div className="text-text-muted mb-1">Prompt Version</div>
+              <div className="text-lg font-bold text-accent">v{matchMeta.promptVersion}</div>
+              <div className="text-text-muted">{matchMeta.promptType}</div>
+            </div>
+            <div className="bg-bg-primary rounded-lg p-3">
+              <div className="text-text-muted mb-1">Patterns Used</div>
+              <div className="text-lg font-bold text-g-yellow">{matchMeta.patternsUsed || 0}</div>
+              <div className="text-text-muted">learned from history</div>
+            </div>
+            <div className="bg-bg-primary rounded-lg p-3">
+              <div className="text-text-muted mb-1">Outcomes Analysed</div>
+              <div className="text-lg font-bold text-g-green">{matchMeta.outcomesAnalysed || 0}</div>
+              <div className="text-text-muted">completed programmes</div>
+            </div>
+            <div className="bg-bg-primary rounded-lg p-3">
+              <div className="text-text-muted mb-1">Model</div>
+              <div className="text-lg font-bold text-text-primary">Gemini</div>
+              <div className="text-text-muted">3.1 Flash</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Learning Status Panel */}
+      {learningStatus && (
+        <div className="bg-bg-card border border-border rounded-xl p-4 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={14} className="text-accent" />
+            <span className="text-[13px] font-semibold">AI Model Intelligence</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-accent/15 text-accent font-semibold ml-auto">
+              Prompt v{learningStatus.promptVersion}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-3 mb-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-accent">{learningStatus.estimatedAccuracy}%</div>
+              <div className="text-[10px] text-text-muted">Est. Accuracy</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-g-yellow">{learningStatus.patternsLearned}</div>
+              <div className="text-[10px] text-text-muted">Patterns Learned</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-g-green">{learningStatus.outcomesAnalysed}</div>
+              <div className="text-[10px] text-text-muted">Outcomes Analysed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-text-primary">{learningStatus.matchesProcessed}</div>
+              <div className="text-[10px] text-text-muted">Matches Processed</div>
+            </div>
+          </div>
+
+          {/* Accuracy Trajectory */}
+          <div className="flex items-end gap-1 h-12 mb-2">
+            {(learningStatus.accuracyHistory || []).map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                <span className="text-[9px] text-text-muted">{h.accuracy}%</span>
+                <div className="w-full rounded-t" style={{ height: `${h.accuracy * 0.4}px`, background: i === (learningStatus.accuracyHistory.length - 1) ? '#10b981' : '#1a1f2e', border: '1px solid rgba(16,185,129,0.3)' }} />
+                <span className="text-[8px] text-text-muted">P{h.programme}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-text-muted">
+            <Zap size={10} className="text-accent" />
+            <span>Each programme adds outcome data → smarter matching → higher accuracy</span>
+          </div>
+
+          {/* Learned Patterns */}
+          {learningStatus.patterns && learningStatus.patterns.length > 0 && (
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="text-[11px] text-text-muted mb-2">Discovered Patterns:</div>
+              {learningStatus.patterns.map((p, i) => (
+                <div key={i} className="flex items-start gap-2 mb-1.5">
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${p.confidence === 'HIGH' ? 'bg-accent/15 text-accent' : 'bg-g-yellow/15 text-g-yellow'}`}>
+                    {p.confidence}
+                  </span>
+                  <span className="text-[10px] text-text-secondary">{p.pattern}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Empty State */}
-      {!loading && !results && !error && (
+      {!loading && !results && !error && !learningStatus && (
         <div className="bg-bg-card border border-border rounded-xl p-10 flex flex-col items-center gap-3 text-center">
           <Sparkles size={32} className="text-text-muted" />
-          <div className="text-sm text-text-muted">Select an entity and click "Find Matches" to get AI-powered recommendations</div>
+          <div className="text-sm text-text-muted">Select an entity and click &quot;Find Matches&quot; to get AI-powered recommendations</div>
         </div>
       )}
     </div>

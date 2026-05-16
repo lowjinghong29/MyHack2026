@@ -121,6 +121,19 @@ export async function triggerNudgeRun() {
 }
 
 /**
+ * Fetches AI learning status — prompt version, patterns, accuracy.
+ */
+export async function getLearningStatus() {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getLearningStatus' }),
+  });
+  if (!res.ok) throw new Error('Failed to fetch learning status');
+  return res.json();
+}
+
+/**
  * Helper: build entity lookup map from array.
  */
 export function buildEntityMap(entities) {
