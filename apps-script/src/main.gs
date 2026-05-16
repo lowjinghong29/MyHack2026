@@ -22,6 +22,8 @@ function onOpen() {
     .createMenu('EcoLink')
     .addItem('Run Nudge Engine (live)', 'runNudgeEngine')
     .addItem('Run Nudge Demo (threshold = 0)', 'runNudgeEngineDemo')
+    .addSeparator()
+    .addItem('Send Approved Nudges', 'sendApprovedNudges')
     .addToUi();
 }
 
