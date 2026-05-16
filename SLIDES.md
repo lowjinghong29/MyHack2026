@@ -340,4 +340,4 @@ If you skip any slide, that's fine — slides 2, 6, 8, 10, 11, 12 are the strong
 
 ---
 
-*Drafted overnight by Claude for the EcoLink AI team. Edit freely.*
+*EcoLink AI | MyHack 2026 | GDG Kuala Lumpur*
