@@ -15,8 +15,10 @@
 function getNudgeConfig() {
   const props = PropertiesService.getScriptProperties();
   const thresholdRaw = props.getProperty('DORMANT_THRESHOLD_DAYS');
+  const scoreRaw = props.getProperty('HEALTH_SCORE_THRESHOLD');
   return {
     thresholdDays: thresholdRaw === null || thresholdRaw === '' ? 30 : Number(thresholdRaw),
+    healthScoreThreshold: scoreRaw === null || scoreRaw === '' ? 40 : Number(scoreRaw),
     dryRun: props.getProperty('NUDGE_DRY_RUN') === 'true',
     requireApproval: props.getProperty('NUDGE_REQUIRE_APPROVAL') === 'true',
     geminiApiKey: props.getProperty('GEMINI_API_KEY') || '',
@@ -26,14 +28,22 @@ function getNudgeConfig() {
 
 /**
  * Main entry: scans all active linkages and dispatches (or queues) a
- * nudge for any past the threshold. Computes a categorical health bucket
- * per linkage purely for stats / Chat summary; the dashboard derives the
- * same bucket from Last_Interaction_Date directly (AppSheet virtual col).
+ * nudge for any that have gone dormant. A linkage is considered dormant
+ * if EITHER:
+ *   (a) days since Last_Interaction_Date >= sendThreshold (time-based), OR
+ *   (b) Health_Score < healthScoreThreshold (quality-based, set by jh's
+ *       interactionTracker.calculateHealthScore from recency + frequency).
+ *
+ * Two signals because they catch different failure modes:
+ *   - Time alone misses relationships that interact often but poorly.
+ *   - Score alone misses relationships that haven't interacted recently
+ *     enough for the score to be updated (jh's tracker only refreshes
+ *     Health_Score when it detects new interactions).
  *
  * @param {{sendThresholdOverride?: number}} [opts] one-off overrides for demos.
- *   Only affects the send decision; health bucketing always uses the
- *   configured threshold.
- * @returns {{scanned:number, atRisk:number, dormant:number, queued:number, sent:number}}
+ *   Only affects the time-based trigger; score-based trigger always uses
+ *   the configured threshold.
+ * @returns {{scanned, atRisk, dormant, lowScore, queued, sent}}
  */
 function runNudgeEngine(opts) {
   const config = getNudgeConfig();
@@ -48,7 +58,7 @@ function runNudgeEngine(opts) {
   entities.forEach(e => { entityMap[e.Entity_ID] = e; });
 
   const now = new Date();
-  const stats = { scanned: 0, atRisk: 0, dormant: 0, queued: 0, sent: 0 };
+  const stats = { scanned: 0, atRisk: 0, dormant: 0, lowScore: 0, queued: 0, sent: 0 };
 
   linkages.forEach(linkage => {
     stats.scanned++;
@@ -57,11 +67,15 @@ function runNudgeEngine(opts) {
     const daysSince = Math.floor((now - lastInteraction) / (1000 * 60 * 60 * 24));
 
     const healthStatus = computeHealthStatus(daysSince, healthThreshold);
-
     if (healthStatus === 'At_Risk') stats.atRisk++;
     if (healthStatus === 'Dormant') stats.dormant++;
 
-    if (daysSince < sendThreshold) return;
+    const healthScore = Number(linkage.Health_Score);
+    const scoreLow = !isNaN(healthScore) && healthScore < config.healthScoreThreshold;
+    if (scoreLow) stats.lowScore++;
+
+    const timeTriggered = daysSince >= sendThreshold;
+    if (!timeTriggered && !scoreLow) return;
 
     const entityA = entityMap[linkage.Entity_A_ID];
     const entityB = entityMap[linkage.Entity_B_ID];
@@ -85,7 +99,8 @@ function runNudgeEngine(opts) {
 
   postChatSummary(stats, config);
   Logger.log(`Nudge engine: scanned=${stats.scanned}, at_risk=${stats.atRisk}, ` +
-    `dormant=${stats.dormant}, queued=${stats.queued}, sent=${stats.sent}`);
+    `dormant=${stats.dormant}, low_score=${stats.lowScore}, ` +
+    `queued=${stats.queued}, sent=${stats.sent}`);
   return stats;
 }
 
@@ -235,6 +250,7 @@ function postChatSummary(stats, config) {
   const ts = formatTimestamp(new Date());
   const text = `🔔 EcoLink — ${stats.scanned} linkages scanned, ` +
     `${stats.atRisk} at-risk, ${stats.dormant} dormant, ` +
+    `${stats.lowScore || 0} low-score, ` +
     `${stats.queued} queued, ${stats.sent} sent at ${ts}`;
   try {
     UrlFetchApp.fetch(config.chatWebhookUrl, {
