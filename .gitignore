@@ -37,3 +37,7 @@ token.json
 service-account.json
 .superpowers/
 frontend/dist/
+
+# AI tools
+CLAUDE.md
+.claude/
