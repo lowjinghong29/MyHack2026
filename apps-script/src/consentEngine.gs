@@ -6,6 +6,16 @@
  */
 
 var MAX_ACTIVE_MENTEES = 3;
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyn3WDkU66HuKBhyEjOius7aa4LnCd8lLjQb5ABjn8S7mrLm5z2fVw8EgjYYjScOtRlcA/exec';
+
+/**
+ * Builds a clickable consent URL for email buttons.
+ */
+function getConsentUrl(matchId, responder, decision) {
+  return WEB_APP_URL + '?action=consent&matchId=' + encodeURIComponent(matchId)
+    + '&responder=' + encodeURIComponent(responder)
+    + '&decision=' + encodeURIComponent(decision);
+}
 
 /**
  * Creates Match_History sheet with proper headers if it doesn't exist.
@@ -248,8 +258,12 @@ function buildConsentEmail(recipientName, partnerName, partnerRole, partnerTags,
     + '</div>'
     + '</div>'
     + '<p>Would you like to ' + actionLabel + '?</p>'
+    + '<div style="margin: 20px 0; text-align: center;">'
+    + '<a href="' + getConsentUrl(matchId, recipientType, 'ACCEPTED') + '" style="display:inline-block;padding:12px 32px;background:#10b981;color:white;text-decoration:none;border-radius:8px;font-weight:bold;margin-right:12px;">Accept</a>'
+    + '<a href="' + getConsentUrl(matchId, recipientType, 'DECLINED') + '" style="display:inline-block;padding:12px 32px;background:#ef4444;color:white;text-decoration:none;border-radius:8px;font-weight:bold;">Decline</a>'
+    + '</div>'
     + '<p style="color: #9ca3af; font-size: 12px;">Match ID: ' + matchId + '</p>'
-    + '<p style="color: #9ca3af; font-size: 12px;">This is an automated message from EcoLink AI. Reply to this email or contact your programme admin.</p>'
+    + '<p style="color: #9ca3af; font-size: 12px;">This is an automated message from EcoLink AI.</p>'
     + '</div>';
 }
 

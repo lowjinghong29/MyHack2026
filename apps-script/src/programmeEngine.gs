@@ -490,3 +490,153 @@ function populateDemoMilestonesAndOutcomes() {
 
   Logger.log('Demo data: ' + count + ' linkages with milestones, 2 outcomes recorded');
 }
+
+// =====================================================
+// MONTHLY REPORTS (Phase 6)
+// =====================================================
+
+/**
+ * Submits a monthly report for a linkage.
+ */
+function submitMonthlyReport(linkageId, month, revenue, teamSize, customers, budgetSpent, burnRate, remainingBudget, topWin, biggestChallenge) {
+  var reportId = 'RPT-' + Utilities.getUuid().substring(0, 8).toUpperCase();
+
+  // Simple Gemini-style analysis based on data
+  var analysis = '';
+  if (Number(burnRate) > 0 && Number(remainingBudget) > 0) {
+    var runway = Math.round(Number(remainingBudget) / Number(burnRate) * 10) / 10;
+    analysis = 'Runway: ' + runway + ' months. ';
+    if (runway < 3) analysis += 'ALERT: Runway below 3 months — recommend exploring bridge funding. ';
+  }
+  if (Number(revenue) > 0) analysis += 'Revenue positive at RM' + revenue + '. ';
+  if (Number(customers) > 0) analysis += customers + ' active customers. ';
+  analysis += 'Challenge noted: ' + (biggestChallenge || 'none reported') + '.';
+
+  appendRow(SHEETS.MONTHLY_REPORTS, [
+    reportId, linkageId, month,
+    revenue || 0, teamSize || 0, customers || 0,
+    budgetSpent || 0, burnRate || 0, remainingBudget || 0,
+    topWin || '', biggestChallenge || '', analysis,
+    formatTimestamp(new Date())
+  ]);
+
+  Logger.log('Monthly report ' + reportId + ' submitted for ' + linkageId);
+  return { reportId: reportId, analysis: analysis };
+}
+
+// =====================================================
+// AI IMPROVEMENT LOG (Phase 10)
+// =====================================================
+
+/**
+ * Sets up the AI_Improvement_Log sheet.
+ */
+function setupAILogSheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(SHEETS.AI_LOG);
+  if (!sheet) sheet = ss.insertSheet(SHEETS.AI_LOG);
+  sheet.getRange(1, 1, 1, 8).setValues([[
+    'Log_ID', 'Pattern_Discovered', 'Pattern_Confidence',
+    'Affected_Criteria', 'Prompt_Version', 'Accuracy_Before',
+    'Accuracy_After', 'Created_At'
+  ]]);
+  Logger.log('AI_Improvement_Log sheet ready');
+}
+
+/**
+ * Analyses all outcomes and logs discovered patterns.
+ * Called after recording outcomes to close the learning loop.
+ */
+function analyseAndLogPatterns() {
+  var outcomes = [];
+  try { outcomes = getSheetData(SHEETS.OUTCOMES); } catch (e) { return; }
+  if (outcomes.length < 2) return;
+
+  var successful = outcomes.filter(function(o) {
+    return o.Outcome_Status === 'Funded' || o.Outcome_Status === 'Graduated';
+  });
+  var failed = outcomes.filter(function(o) {
+    return o.Outcome_Status === 'Churned' || o.Outcome_Status === 'Stalled';
+  });
+
+  var totalOutcomes = outcomes.length;
+  var successRate = Math.round((successful.length / totalOutcomes) * 100);
+
+  var patterns = [];
+
+  // Pattern 1: Success rate
+  patterns.push({
+    pattern: 'Overall success rate: ' + successRate + '% (' + successful.length + '/' + totalOutcomes + ')',
+    confidence: successRate > 60 ? 'HIGH' : 'MEDIUM',
+    criteria: 'match_score_threshold'
+  });
+
+  // Pattern 2: High attribution correlation
+  var highAttr = outcomes.filter(function(o) { return o.Match_Attribution === 'High'; });
+  if (highAttr.length > 0) {
+    patterns.push({
+      pattern: 'High-attribution matches: ' + highAttr.length + ' — AI matching directly contributed to outcome',
+      confidence: 'HIGH',
+      criteria: 'match_attribution_scoring'
+    });
+  }
+
+  // Pattern 3: Mentor overload correlation with failures
+  if (failed.length > 0) {
+    patterns.push({
+      pattern: 'Failed matches detected — review mentor capacity limits and industry overlap thresholds',
+      confidence: 'MEDIUM',
+      criteria: 'mentor_capacity,industry_overlap'
+    });
+  }
+
+  // Log each pattern
+  patterns.forEach(function(p) {
+    appendRow(SHEETS.AI_LOG, [
+      'AIL-' + Utilities.getUuid().substring(0, 8).toUpperCase(),
+      p.pattern,
+      p.confidence,
+      p.criteria,
+      'v' + totalOutcomes,
+      '',
+      '',
+      formatTimestamp(new Date())
+    ]);
+  });
+
+  Logger.log('AI Learning: ' + patterns.length + ' patterns logged from ' + totalOutcomes + ' outcomes');
+}
+
+// =====================================================
+// DEMO DATA — Match History + Monthly Reports
+// =====================================================
+
+/**
+ * Populates demo Match_History and Monthly_Reports data.
+ */
+function populateDemoMatchAndReports() {
+  // Demo Match History — 5 completed matches
+  var matchData = [
+    ['MATCH-DEMO001', 'ENT-C01', 'ENT-M02', 'Mentorship', 95, 'Strong FinTech expertise alignment with BNPL product needs', 'ACCEPTED', 'ACCEPTED', '', 'APPROVED', '', '2024-03-10'],
+    ['MATCH-DEMO002', 'ENT-C02', 'ENT-M05', 'Mentorship', 88, 'Medical device regulation expertise matches diagnostic AI product', 'ACCEPTED', 'ACCEPTED', '', 'APPROVED', '', '2024-05-20'],
+    ['MATCH-DEMO003', 'ENT-C05', 'ENT-M03', 'Mentorship', 91, 'B2B sales playbook expertise for logistics enterprise contracts', 'ACCEPTED', 'ACCEPTED', '', 'APPROVED', '', '2025-02-01'],
+    ['MATCH-DEMO004', 'ENT-C11', 'ENT-M09', 'Mentorship', 62, 'Broad enterprise tech match but weak industry overlap', 'ACCEPTED', 'ACCEPTED', '', 'APPROVED', 'LOW_INDUSTRY_OVERLAP', '2024-08-15'],
+    ['MATCH-DEMO005', 'ENT-C07', 'ENT-M01', 'Mentorship', 55, 'AI expertise available but F&B domain mismatch', 'ACCEPTED', 'DECLINED', 'Not my area — I focus on NLP/ML, not POS systems', 'DECLINED_BY_MENTOR', '', '2025-06-10'],
+  ];
+  matchData.forEach(function(row) { appendRow(SHEETS.MATCH_HISTORY, row); });
+
+  // Demo Monthly Reports — 4 reports across 2 linkages
+  var reportData = [
+    ['RPT-DEMO001', 'LNK-001', '2026-03', 5000, 3, 2, 45000, 15000, 205000, 'Signed first merchant partner', 'Cash flow management', 'Runway: 13.7 months. Revenue positive at RM5000. 2 active customers.', '2026-03-30'],
+    ['RPT-DEMO002', 'LNK-001', '2026-04', 12000, 4, 5, 85000, 20000, 165000, 'Secured BNPL license approval', 'Hiring senior engineer', 'Runway: 8.3 months. Revenue positive at RM12000. 5 active customers.', '2026-04-30'],
+    ['RPT-DEMO003', 'LNK-006', '2026-03', 0, 3, 0, 30000, 15000, 220000, 'Completed fleet EV conversion plan', 'Delayed vehicle delivery', 'Runway: 14.7 months. Pre-revenue. Challenge noted: Delayed vehicle delivery.', '2026-03-30'],
+    ['RPT-DEMO004', 'LNK-006', '2026-04', 8000, 5, 3, 75000, 22500, 175000, 'First 3 enterprise delivery clients', 'Managing rapid growth', 'Runway: 7.8 months. Revenue positive at RM8000. 3 active customers.', '2026-04-30'],
+  ];
+  reportData.forEach(function(row) { appendRow(SHEETS.MONTHLY_REPORTS, row); });
+
+  // Run AI pattern analysis
+  setupAILogSheet();
+  analyseAndLogPatterns();
+
+  Logger.log('Demo: 5 match history, 4 monthly reports, AI patterns logged');
+}
