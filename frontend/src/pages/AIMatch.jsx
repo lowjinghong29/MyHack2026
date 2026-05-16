@@ -37,9 +37,9 @@ export default function AIMatch() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
-        <Sparkles size={20} className="text-g-blue" />
+        <Sparkles size={20} className="text-accent" />
         <h1 className="text-xl font-bold">AI Match Request</h1>
-        <span className="text-[10px] px-2 py-0.5 rounded-md bg-g-blue/15 text-g-blue font-semibold ml-2">
+        <span className="text-[10px] px-2 py-0.5 rounded-md bg-accent/15 text-accent font-semibold ml-2">
           Powered by Gemini 2.0
         </span>
       </div>
@@ -56,7 +56,7 @@ export default function AIMatch() {
               value={selectedEntity}
               onChange={e => setSelectedEntity(e.target.value)}
               disabled={entitiesLoading}
-              className="w-full bg-bg-primary border border-border rounded-lg py-2.5 px-3 text-xs text-text-primary focus:outline-none focus:border-g-blue/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-bg-primary border border-border rounded-lg py-2.5 px-3 text-xs text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {entitiesLoading ? (
                 <option value="">Loading entities...</option>
@@ -83,7 +83,7 @@ export default function AIMatch() {
                   onClick={() => setMatchType(type)}
                   className={`flex-1 py-2.5 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
                     matchType === type
-                      ? 'bg-g-blue text-white'
+                      ? 'bg-accent text-white'
                       : 'bg-bg-primary border border-border text-text-secondary hover:bg-bg-card-hover'
                   }`}
                 >
@@ -97,7 +97,7 @@ export default function AIMatch() {
         <button
           onClick={handleMatch}
           disabled={!selectedEntity || loading || entitiesLoading}
-          className="px-6 py-2.5 bg-g-blue text-white rounded-lg text-xs font-semibold hover:bg-g-blue/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-2.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent-dim transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {loading ? (
             <>
@@ -123,8 +123,8 @@ export default function AIMatch() {
       {/* Loading State */}
       {loading && (
         <div className="bg-bg-card border border-border rounded-xl p-10 flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-g-blue/15 flex items-center justify-center">
-            <Loader2 size={20} className="text-g-blue animate-spin" />
+          <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+            <Loader2 size={20} className="text-accent animate-spin" />
           </div>
           <div className="text-sm font-medium">Gemini is analyzing entity profiles...</div>
           <div className="text-xs text-text-muted">Matching expertise, industry tags, and compatibility signals</div>
@@ -145,7 +145,7 @@ export default function AIMatch() {
               <div key={match.entityId} className="bg-bg-card border border-border rounded-xl p-5 hover:bg-bg-card-hover transition-colors cursor-pointer">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-g-blue/15 flex items-center justify-center text-g-blue font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center text-accent font-bold text-sm">
                       #{i + 1}
                     </div>
                     <div>
@@ -158,13 +158,13 @@ export default function AIMatch() {
                       <div className="text-lg font-bold text-g-green">{Math.round(match.score * 100)}%</div>
                       <div className="text-[10px] text-text-muted">Match Score</div>
                     </div>
-                    <button className="p-2 rounded-lg bg-g-blue/15 text-g-blue hover:bg-g-blue/25 transition-colors cursor-pointer">
+                    <button className="p-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 transition-colors cursor-pointer">
                       <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
                 <div className="mt-3 text-xs text-text-secondary leading-relaxed pl-[52px]">
-                  <span className="text-g-blue font-medium">Gemini says: </span>{match.reason}
+                  <span className="text-accent font-medium">Gemini says: </span>{match.reason}
                 </div>
               </div>
             ))}

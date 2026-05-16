@@ -5,7 +5,7 @@ import { fetchLinkageDetail, fetchSheet, buildEntityMap } from '../lib/api';
 
 function HealthGauge({ score }) {
   const val = Number(score);
-  const color = val >= 70 ? '#34a853' : val >= 40 ? '#fbbc04' : '#ea4335';
+  const color = val >= 70 ? '#10b981' : val >= 40 ? '#fbbc04' : '#ea4335';
   const label = val >= 70 ? 'Healthy' : val >= 40 ? 'Warning' : 'At Risk';
   const circumference = 2 * Math.PI * 42;
 
@@ -33,9 +33,9 @@ function HealthGauge({ score }) {
 }
 
 const typeColor = {
-  Mentorship: 'bg-g-blue/15 text-g-blue',
-  Partnership: 'bg-g-green/15 text-g-green',
-  Investment: 'bg-g-yellow/15 text-g-yellow',
+  Mentorship: 'bg-accent/15 text-accent',
+  Partnership: 'bg-g-blue/15 text-g-blue',
+  Investment: 'bg-[#d4a853]/15 text-[#d4a853]',
 };
 
 const interactionIcon = {
@@ -85,7 +85,7 @@ export default function LinkageDetail() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <div className="text-text-muted">Linkage not found</div>
-        <Link to="/linkages" className="text-g-blue text-sm hover:underline">Back to Linkages</Link>
+        <Link to="/linkages" className="text-accent text-sm hover:underline">Back to Linkages</Link>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export default function LinkageDetail() {
           <div className="flex items-center gap-4">
             {/* Entity A */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-g-blue/15 flex items-center justify-center text-g-blue font-bold">
+              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center text-accent font-bold">
                 {initials(entityA?.Name)}
               </div>
               <div>
@@ -127,7 +127,7 @@ export default function LinkageDetail() {
             {/* Connector */}
             <div className="flex items-center gap-2 px-4">
               <div className="w-8 h-px bg-border" />
-              <Heart size={16} className="text-g-blue" />
+              <Heart size={16} className="text-accent" />
               <div className="w-8 h-px bg-border" />
             </div>
 
@@ -173,7 +173,7 @@ export default function LinkageDetail() {
           </div>
           <div className="bg-bg-primary rounded-lg p-4">
             <div className="text-[10px] text-text-muted font-medium uppercase tracking-wider mb-2">Total Interactions</div>
-            <div className="text-2xl font-bold text-g-blue">{interactions.length}</div>
+            <div className="text-2xl font-bold text-accent">{interactions.length}</div>
             <div className="text-[10px] text-text-muted mt-1">Since {linkage.Start_Date}</div>
           </div>
         </div>
@@ -195,14 +195,14 @@ export default function LinkageDetail() {
                 return (
                   <div key={interaction.Interaction_ID} className="flex gap-4 relative">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                      isMeeting ? 'bg-g-green/15' : 'bg-g-blue/15'
+                      isMeeting ? 'bg-g-green/15' : 'bg-accent/15'
                     }`}>
-                      <Icon size={14} className={isMeeting ? 'text-g-green' : 'text-g-blue'} />
+                      <Icon size={14} className={isMeeting ? 'text-g-green' : 'text-accent'} />
                     </div>
                     <div className="flex-1 bg-bg-primary rounded-lg p-3">
                       <div className="flex justify-between items-start mb-1">
                         <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                          isMeeting ? 'bg-g-green/15 text-g-green' : 'bg-g-blue/15 text-g-blue'
+                          isMeeting ? 'bg-g-green/15 text-g-green' : 'bg-accent/15 text-accent'
                         }`}>
                           {interaction.Interaction_Type}
                         </span>
