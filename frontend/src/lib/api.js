@@ -71,6 +71,56 @@ export async function sendConsent(companyId, mentorId, matchScore, matchReason, 
 }
 
 /**
+ * Records a consent response (accept/decline) from one party.
+ * @param {string} matchId
+ * @param {'company'|'mentor'} responder
+ * @param {'ACCEPTED'|'DECLINED'} decision
+ * @param {string} [reason] - free-text reason if declined
+ */
+export async function respondConsent(matchId, responder, decision, reason) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'respondConsent',
+      matchId,
+      responder,
+      decision,
+      reason: reason || '',
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to record consent response');
+  return res.json();
+}
+
+/**
+ * Registers a new entity (company / mentor / partner).
+ * @param {{name, role, email, industryTags?, expertiseNeeds?}} entity
+ */
+export async function addEntity(entity) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'addEntity', entity }),
+  });
+  if (!res.ok) throw new Error('Failed to register entity');
+  return res.json();
+}
+
+/**
+ * Triggers an immediate run of the nudge engine (threshold = 0, no cron wait).
+ */
+export async function triggerNudgeRun() {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'triggerNudgeRun' }),
+  });
+  if (!res.ok) throw new Error('Failed to trigger nudge run');
+  return res.json();
+}
+
+/**
  * Helper: build entity lookup map from array.
  */
 export function buildEntityMap(entities) {
