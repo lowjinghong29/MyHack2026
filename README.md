@@ -12,7 +12,8 @@ Innovation ecosystem platforms still depend on **manual coordination** to verify
 
 ### Key Features
 
-- **Smart Entity Matching** — Gemini-powered semantic matching that recommends optimal mentor-company-partner pairings based on expertise, needs, and historical outcomes
+- **Self-Service Registration** — Startups, mentors, and partners register via AppSheet form; Entity_ID auto-generated, data written directly to Google Sheets
+- **AI Matching** — Gemini 2.0-flash scores all entity pairings and returns top 3 recommendations with personalised reasoning
 - **Automated Interaction Tracking** — Passive capture of meetings, emails, and engagement signals to maintain a living history of every relationship
 - **Relationship Health Monitoring** — Real-time health scores and automated nudges to prevent relationships from going dormant
 - **Reusable Linkage Templates** — Relationship patterns that can be defined once and replicated across programmes, cohorts, and regions
@@ -24,18 +25,30 @@ Innovation ecosystem platforms still depend on **manual coordination** to verify
 - **SDG 17** — Partnerships for the Goals
 - **SDG 8** — Decent Work and Economic Growth
 
+## Live Links
+
+| System | URL |
+|--------|-----|
+| Web App (Analytics + AI Matching) | https://ecolink-erm.web.app |
+| Admin App — AppSheet (Preview) | https://www.appsheet.com/start/7a6e9f3e-63fb-4367-9c68-50fd03a3f028 |
+
+> **Note:** AppSheet runs in preview mode (free tier). Request an invite from the team to access. The web app is fully public.
+
+---
+
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| AI Engine | Gemini 3.1 API via Google AI Studio |
-| Database (MVP) | Google Sheets (relational backend) |
-| Database (Scale) | Firebase / BigQuery |
-| Application UI | Google AppSheet |
-| Automation | Google Apps Script (clasp CLI) |
-| Cloud Functions | Google Cloud Functions |
-| Integrations | Gmail API, Google Calendar API |
-| Intake | Google Forms / AppSheet Forms |
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| AI Matching + Nudges | Gemini 2.0-flash | Profile scoring, match reasoning, personalised email writing |
+| Database | Google Sheets (7 tabs) | Live database — transparent, shareable, real-time |
+| Engagement Tracking | Gmail API | Auto-detect email exchanges between linked entities |
+| Session Detection | Google Calendar API | Auto-detect scheduled meetings |
+| Backend Automation | Google Apps Script | Nudge engine, dormancy checks, daily triggers |
+| AI Endpoint | Google Cloud Functions | Serverless Gemini matchmaking API |
+| Admin UI | Google AppSheet | No-code interface with registration form + match approvals |
+| Web Frontend | React + Vite | Analytics dashboard, AI matching UI |
+| Hosting | Firebase Hosting | Live at ecolink-erm.web.app |
 
 ## Architecture
 
