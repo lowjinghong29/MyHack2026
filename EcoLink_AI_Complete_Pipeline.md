@@ -60,7 +60,7 @@
 | One-off relationships | Relationships are reusable entities |
 | No insight on what works | Dashboard shows success patterns |
 | Admin approves every match | Admin handles exceptions only |
-| Forced pairings | 3-way consent model |
+| Forced pairings | Email consent — both parties must agree |
 
 ---
 
@@ -323,7 +323,7 @@ Top 3 mentor recommendations ready
 Gemini does not just match keywords. It reads profiles deeply and reasons like a human expert recruiter:
 
 ```
-STARTUP PROFILE READ:
+COMPANY PROFILE READ:
 "TechBro — Fintech, Pre-seed,
  needs fundraising + bank partnerships,
  team of 2, KL-based"
@@ -447,7 +447,7 @@ Explain top 3 matches in 2-3 personalised sentences.
 
 ---
 
-### If Startup Asks For Refinement
+### If Company Asks For Refinement
 
 Gemini asks follow-up questions:
 
@@ -570,7 +570,7 @@ The rejection reason is logged and feeds back into the matching model:
 
 ### Google Sheets Updated
 - ✅ `Linkages` — new row created when both agree (Status: Active)
-- 🔮 `Match_History` — match score, AI reasoning, both decisions logged (roadmap)
+- ✅ `Match_History` — match score, AI reasoning, both decisions logged
 
 ---
 
@@ -672,7 +672,7 @@ Admin does NOT:
 ### Google Sheets Updated
 
 - ✅ `Linkages` — new active linkage row created (current MVP)
-- 🔮 `Match_History` — final approval status (roadmap)
+- ✅ `Match_History` — final approval status logged
 
 ---
 
@@ -787,10 +787,10 @@ Auto-approved:  ✅ No flags detected
 
 ### Google Sheets Updated
 
-- ✅ `Linkages` — new active linkage row created (current MVP)
-- 🔮 `Milestones` — auto-created rows (roadmap)
-- 🔮 `Growth_Metrics` — template rows created (roadmap)
-- 🔮 `Sessions` — log started (roadmap)
+- ✅ `Linkages` — new active linkage row created
+- ✅ `Milestones` — auto-created from templates (9 per Mentorship, 7 per Investment/Partnership)
+- 🔮 `Monthly_Reports` — template rows created when company submits first report (roadmap)
+- ✅ `Match_History` — approval status updated
 
 ---
 
@@ -1065,7 +1065,7 @@ DAY 7:  Still no improvement
           ↓
 IF REASSIGNMENT CHOSEN:
         → AI re-runs matching
-        → New Top 3 shown to startup
+        → New Top 3 shown to company
         → Process restarts from Phase 2
         → Outcome of original match logged
           as "Reassigned" for AI learning
@@ -1326,9 +1326,9 @@ MATCH QUALITY:          Excellent
 
 ### Google Sheets Updated
 
-- 🔮 `Outcomes` — full outcome row added (roadmap)
+- ✅ `Outcomes` — full outcome row added with success score and attribution
+- ✅ `Linkages` — status set to Archived
 - 🔮 `Entities` — mentor rating + successful exits count updated (roadmap)
-- ✅ `Linkages` — status set to Archived (current MVP)
 
 ---
 
@@ -1443,24 +1443,24 @@ Programme 5:  AI match accuracy = 94%  🚀
 
 ### Complete Tab List
 
-**Currently Built (MVP):**
+**Currently Built (MVP) — 8 sheets:**
 
-| Tab Name | Purpose |
-|----------|---------|
-| `Entities` | All ecosystem actors (Role: Mentor, Company, Partner, Admin) |
-| `Linkages` | Relationships between entities (Mentorship, Investment, Partnership) |
-| `Interactions` | Email and meeting logs between linked entities |
-| `Nudge_Log` | Audit trail of all nudge engine decisions |
-| `Pending_Nudges` | Human-in-the-loop approval queue for nudge emails |
+| Tab Name | Purpose | Data |
+|----------|---------|------|
+| `Entities` | All ecosystem actors (Role: Mentor, Company, Partner) | 33 rows |
+| `Linkages` | Relationships between entities (Mentorship, Investment, Partnership) | 25 rows |
+| `Interactions` | Email and meeting logs between linked entities | 50 rows |
+| `Nudge_Log` | Audit trail of all nudge engine decisions | — |
+| `Pending_Nudges` | Human-in-the-loop approval queue for nudge emails | — |
+| `Match_History` | AI match scores, reasons, consent decisions, approval status | — |
+| `Milestones` | Programme milestones per linkage (auto-created on approval) | 45 rows |
+| `Outcomes` | Final programme results with success scores and attribution | 2 rows |
 
 **Roadmap (future phases):**
 
 | Tab Name | Purpose |
 |----------|---------|
-| `Match_History` | AI match scores, reasons, approval decisions |
-| `Milestones` | Programme goals per startup |
-| `Growth_Metrics` | Monthly startup KPIs |
-| `Outcomes` | Final programme results |
+| `Monthly_Reports` | Monthly startup KPIs submitted via Google Forms |
 | `AI_Improvement_Log` | Patterns learned + prompt versions |
 
 ---
@@ -1485,25 +1485,37 @@ Linkage_ID | Entity_A_ID | Entity_B_ID | Linkage_Type | Start_Date | Last_Intera
 Interaction_ID | Linkage_ID | Interaction_Type | Date | Summary
 ```
 
-**Match_History tab (roadmap):**
+**Match_History tab (current):**
 
 ```
-id | startup_id | mentor_id | programme_id |
-match_score | match_reason | matched_by |
-startup_decision | mentor_decision |
-mentor_reject_reason | final_status |
-conflict_flag | created_at
+Match_ID | Company_ID | Mentor_ID | Linkage_Type |
+Match_Score | Match_Reason |
+Company_Decision | Mentor_Decision | Reject_Reason |
+Final_Status | Conflict_Flag | Created_At
 ```
 
-**Outcomes tab (roadmap):**
+**Milestones tab (current):**
 
 ```
-id | engagement_id | startup_id | mentor_id |
-programme_id | outcome_status | outcome_date |
-funding_raised | growth_metric | success_score |
-match_attribution | mentor_final_rating |
-startup_final_rating | admin_notes |
-lessons_learned | created_at
+Milestone_ID | Linkage_ID | Milestone_Name | Target_Date |
+Completion_Status | Progress_Percent | Evidence_Link | Updated_At
+```
+
+**Outcomes tab (current):**
+
+```
+Outcome_ID | Linkage_ID | Company_ID | Mentor_ID |
+Outcome_Status | Outcome_Date | Funding_Raised | Growth_Metric |
+Success_Score | Match_Attribution | Mentor_Final_Rating |
+Company_Final_Rating | Lessons_Learned | Created_At
+```
+
+**Monthly_Reports tab (roadmap):**
+
+```
+Report_ID | Linkage_ID | Month | Revenue | Team_Size |
+Customers | Budget_Spent | Burn_Rate | Remaining_Budget |
+Top_Win | Biggest_Challenge | Gemini_Analysis | Submitted_At
 ```
 
 **AI_Improvement_Log tab (roadmap):**
@@ -1665,7 +1677,7 @@ You are using: **Gemini 2.0-flash + Google Sheets + Gmail API + Calendar API + A
 | Criterion | Pts | How EcoLink AI Addresses It |
 |-----------|:---:|---------------------------|
 | **Google Technology Integration** | 15 | Gemini 2.0-flash for matching + learning. Google Sheets as database. Gmail + Calendar APIs for engagement tracking. Apps Script + Cloud Functions for backend. AppSheet for admin. Firebase Hosting for frontend. Multiple Google technologies used meaningfully and integrally. |
-| **AI Implementation Quality** | 10 | AI is essential — without it, matching is manual. Model choice justified (Gemini for natural language profile understanding). Ethical considerations: bias mitigation via 3-way consent, transparency via visible match scores and reasons, hallucination mitigation via structured prompts. |
+| **AI Implementation Quality** | 10 | AI is essential — without it, matching is manual. Model choice justified (Gemini for natural language profile understanding). Ethical considerations: bias mitigation via email consent (both parties must agree), transparency via visible match scores and reasons, hallucination mitigation via structured prompts. |
 | **Working Demo & UI/UX** | 10 | Live registration → Google Sheets → matching → dashboard flow demonstrable in real-time. No critical bugs. Clean, intuitive interface for all 3 user types. |
 | **AI Model Performance** | 5 | Match accuracy improves per programme (tracked in AI_Improvement_Log). Rejection feedback reduces bad recommendations. Outcome patterns reduce hallucinated matches. |
 
@@ -1675,7 +1687,7 @@ You are using: **Gemini 2.0-flash + Google Sheets + Gmail API + Calendar API + A
 
 | Criterion | Pts | How EcoLink AI Addresses It |
 |-----------|:---:|---------------------------|
-| **Originality & Creativity** | 10 | 3-way consent model is novel. Treating ecosystem relationships as programmable, reusable entities is directly from the problem statement. Self-improving matching loop differentiates from existing tools. |
+| **Originality & Creativity** | 10 | Email consent model (both parties must agree) is novel. Treating ecosystem relationships as programmable, reusable entities is directly from the problem statement. Self-improving matching loop differentiates from existing tools. |
 | **Problem-Solution Fit** | 15 | Directly solves Cradle Fund's exact problem. Clear stakeholders: programme admins, mentors, startups, partners. Solution is practical — built on tools they already use (Google Workspace). |
 | **Scalability** | 10 | Cloud-based — works across Malaysia, Singapore, Indonesia simultaneously. Flywheel effect — more data = smarter AI = better matches = more programmes. Business model: SaaS per programme or per organisation. |
 | **Deployment Readiness** | 5 | Firebase Hosting (ecolink-erm.web.app) + Apps Script Web App + AppSheet live. Google Sheets as accessible database. Clear path from prototype to production: add auth, connect real Cradle data, train on historical outcomes. |
