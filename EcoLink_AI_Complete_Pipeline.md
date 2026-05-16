@@ -1004,7 +1004,7 @@ STARTUP GROWTH OVERVIEW — All Active Matches
 
 ### Google Sheets Updated
 
-- ✅ `Growth_Metrics` — new row per monthly update
+- 🔮 `Monthly_Reports` — new row per monthly update (roadmap — via Google Forms)
 - ✅ `Milestones` — status updated per milestone
 
 ---
@@ -1434,8 +1434,8 @@ Programme 5:  AI match accuracy = 94%  🚀
 
 ### Google Sheets Updated
 
-- ✅ `AI_Improvement_Log` — patterns learned + prompt version saved
-- ✅ `Match_History` — outcome correlation added to historical records
+- 🔮 `AI_Improvement_Log` — patterns learned + prompt version saved (roadmap)
+- 🔮 `Match_History` — outcome correlation added to historical records (roadmap)
 
 ---
 
