@@ -41,13 +41,13 @@ Innovation ecosystem platforms still depend on **manual coordination** to verify
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  AppSheet UI                     │
-│         (Role-based dashboards & forms)          │
+│                  AppSheet UI                    │
+│         (Role-based dashboards & forms)         │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
-│              Google Apps Script                   │
-│    (Automation, sync, triggers, API gateway)      │
+│              Google Apps Script                 │
+│    (Automation, sync, triggers, API gateway)    │
 ├──────────┬───────────┬───────────┬──────────────┤
 │ Gmail    │ Calendar  │ Sheets    │ Gemini API   │
 │ API      │ API       │ (DB)      │ (AI Engine)  │
