@@ -46,6 +46,31 @@ export async function requestAIMatch(entityId, matchType) {
 }
 
 /**
+ * Sends consent emails to both parties via the Apps Script doPost endpoint.
+ * @param {string} companyId
+ * @param {string} mentorId
+ * @param {number} matchScore - 0 to 1
+ * @param {string} matchReason
+ * @param {string} linkageType
+ */
+export async function sendConsent(companyId, mentorId, matchScore, matchReason, linkageType) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'sendConsent',
+      companyId,
+      mentorId,
+      matchScore,
+      matchReason,
+      linkageType,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to send consent emails');
+  return res.json();
+}
+
+/**
  * Helper: build entity lookup map from array.
  */
 export function buildEntityMap(entities) {

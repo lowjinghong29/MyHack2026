@@ -10,7 +10,8 @@ const SHEETS = {
   LINKAGES: 'Linkages',
   INTERACTIONS: 'Interactions',
   NUDGE_LOG: 'Nudge_Log',
-  PENDING_NUDGES: 'Pending_Nudges'
+  PENDING_NUDGES: 'Pending_Nudges',
+  MATCH_HISTORY: 'Match_History'
 };
 
 /**
@@ -24,6 +25,8 @@ function onOpen() {
     .addItem('Run Nudge Demo (threshold = 0)', 'runNudgeEngineDemo')
     .addSeparator()
     .addItem('Send Approved Nudges', 'sendApprovedNudges')
+    .addSeparator()
+    .addItem('Setup Match_History sheet', 'setupMatchHistorySheet')
     .addToUi();
 }
 
@@ -135,4 +138,37 @@ function doGet(e) {
 
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Web App POST endpoint — handles actions from the frontend.
+ *
+ * Actions:
+ *   { action: "sendConsent", companyId, mentorId, matchScore, matchReason, linkageType }
+ *   { action: "respondConsent", matchId, responder, decision, reason }
+ */
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var result = {};
+
+    if (body.action === 'sendConsent') {
+      result = sendConsentEmails(
+        body.companyId, body.mentorId,
+        body.matchScore, body.matchReason, body.linkageType || 'Mentorship'
+      );
+    } else if (body.action === 'respondConsent') {
+      result = processConsentResponse(
+        body.matchId, body.responder, body.decision, body.reason || ''
+      );
+    } else {
+      result = { error: 'Unknown action: ' + body.action };
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }

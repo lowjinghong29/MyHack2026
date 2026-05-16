@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
-import { fetchSheet, requestAIMatch } from '../lib/api';
+import { fetchSheet, requestAIMatch, sendConsent } from '../lib/api';
 
 export default function AIMatch() {
   const [entities, setEntities] = useState([]);
@@ -10,6 +10,8 @@ export default function AIMatch() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
+  const [consentSending, setConsentSending] = useState(null);
+  const [consentResult, setConsentResult] = useState(null);
 
   useEffect(() => {
     fetchSheet('Entities')
@@ -29,6 +31,22 @@ export default function AIMatch() {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectMatch = async (match) => {
+    setConsentSending(match.entityId);
+    setConsentResult(null);
+    try {
+      const data = await sendConsent(
+        selectedEntity, match.entityId,
+        match.score, match.reason, matchType
+      );
+      setConsentResult({ matchId: data.matchId, mentorName: match.name, status: data.status });
+    } catch (err) {
+      setConsentResult({ error: err.message || 'Failed to send consent emails' });
+    } finally {
+      setConsentSending(null);
     }
   };
 
@@ -120,6 +138,18 @@ export default function AIMatch() {
         </div>
       )}
 
+      {/* Consent Result */}
+      {consentResult && !consentResult.error && (
+        <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-4 text-accent text-xs">
+          Consent emails sent for match <strong>{consentResult.matchId}</strong> — waiting for both parties to respond.
+        </div>
+      )}
+      {consentResult?.error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4 text-red-400 text-xs">
+          {consentResult.error}
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
         <div className="bg-bg-card border border-border rounded-xl p-10 flex flex-col items-center gap-3">
@@ -158,8 +188,13 @@ export default function AIMatch() {
                       <div className="text-lg font-bold text-g-green">{Math.round(match.score * 100)}%</div>
                       <div className="text-[10px] text-text-muted">Match Score</div>
                     </div>
-                    <button className="p-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 transition-colors cursor-pointer">
-                      <ArrowRight size={14} />
+                    <button
+                      onClick={() => handleSelectMatch(match)}
+                      disabled={consentSending === match.entityId}
+                      className="p-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 transition-colors cursor-pointer disabled:opacity-50"
+                      title="Send consent emails to both parties"
+                    >
+                      {consentSending === match.entityId ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                     </button>
                   </div>
                 </div>
