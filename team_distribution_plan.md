@@ -1,5 +1,20 @@
 # ERM Team Distribution Plan — 4 Persons
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **AI Engine** | Gemini API via Google AI Studio |
+| **Database (MVP)** | Google Sheets (relational backend) |
+| **Database (Scale)** | Firebase / BigQuery |
+| **Application UI** | Google AppSheet |
+| **Automation** | Google Apps Script (via `clasp` CLI) |
+| **Cloud Functions** | Google Cloud Functions |
+| **Integrations** | Gmail API, Google Calendar API |
+| **Intake** | Google Forms / AppSheet Forms |
+
+---
+
 ## Dependency Note
 **Phase 1 is a hard blocker** — the Google Sheet schema and AppSheet setup must exist before Phases 2–4 can run. Person A starts first; B, C, D begin in parallel once the schema sheet is live.
 
@@ -48,10 +63,10 @@
 
 | Task | Details |
 |---|---|
-| Cloud Function / endpoint | Scaffold a Node.js or Python Google Cloud Function (or Apps Script `doPost` endpoint) |
+| Cloud Function / endpoint | Scaffold a Node.js Google Cloud Function (or Apps Script `doPost` endpoint) |
 | Gemini API integration | Wire up Google AI Studio API key; call `gemini-pro` with structured prompt |
 | Prompt engineering | Pass `Expertise_Needs` of the new entity + JSON dump of `Entities` table; ask for top-3 `Entity_ID` matches with `Match_Reason` |
-| Structured output | Parse Gemini JSON response; write "Pending Linkage Approvals" rows to Sheet or AppSheet |
+| Structured output | Parse Gemini JSON response; write "Pending Linkage Approvals" rows to Google Sheets |
 | AppSheet surface | Work with Person A to add a `Pending Approvals` view in AppSheet for admins |
 
 ---
