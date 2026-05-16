@@ -8,8 +8,22 @@ const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPRE
 const SHEETS = {
   ENTITIES: 'Entities',
   LINKAGES: 'Linkages',
-  INTERACTIONS: 'Interactions'
+  INTERACTIONS: 'Interactions',
+  NUDGE_LOG: 'Nudge_Log',
+  PENDING_NUDGES: 'Pending_Nudges'
 };
+
+/**
+ * Adds an "EcoLink" menu to the spreadsheet so a judge can run the demo
+ * with a single click. Bound automatically when the sheet opens.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('EcoLink')
+    .addItem('Run Nudge Engine (live)', 'runNudgeEngine')
+    .addItem('Run Nudge Demo (threshold = 0)', 'runNudgeEngineDemo')
+    .addToUi();
+}
 
 /**
  * One-time setup: creates daily triggers for tracking and nudges.
