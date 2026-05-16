@@ -132,6 +132,44 @@ function appendRow(sheetName, rowData) {
 }
 
 /**
+ * Adds a new Entity row from registration form data. Generates a
+ * sequential Entity_ID based on Role prefix (M=Mentor, C=Company, P=Partner).
+ * Returns { entityId } on success or { error } on validation failure.
+ *
+ * @param {object} entity - { name, role, email, industryTags, expertiseNeeds }
+ */
+function addEntity(entity) {
+  if (!entity || !entity.name || !entity.email || !entity.role) {
+    return { error: 'Missing required fields: name, role, email' };
+  }
+  if (!isValidEmail(entity.email)) {
+    return { error: 'Invalid email format' };
+  }
+  var validRoles = ['Mentor', 'Company', 'Partner'];
+  if (validRoles.indexOf(entity.role) === -1) {
+    return { error: 'Role must be Mentor, Company, or Partner' };
+  }
+
+  var prefix = entity.role.charAt(0).toUpperCase();
+  var existing = getSheetData(SHEETS.ENTITIES)
+    .filter(function(e) { return String(e.Entity_ID || '').indexOf('ENT-' + prefix) === 0; });
+  var nextNum = (existing.length + 1).toString().padStart(3, '0');
+  var entityId = 'ENT-' + prefix + nextNum;
+
+  appendRow(SHEETS.ENTITIES, [
+    entityId,
+    entity.name,
+    entity.role,
+    entity.email,
+    entity.industryTags || '',
+    entity.expertiseNeeds || '',
+    'Active'
+  ]);
+
+  return { entityId: entityId, name: entity.name, role: entity.role };
+}
+
+/**
  * Updates a specific cell in a sheet by matching a key column.
  */
 function updateCell(sheetName, keyColumn, keyValue, targetColumn, newValue) {
@@ -258,6 +296,10 @@ function doPost(e) {
       result = { summary: generateAnalyticsSummary() };
     } else if (body.action === 'getMilestoneProgress') {
       result = getMilestoneProgress(body.linkageId);
+    } else if (body.action === 'addEntity') {
+      result = addEntity(body.entity || {});
+    } else if (body.action === 'triggerNudgeRun') {
+      result = runNudgeEngineDemo();
     } else {
       result = { error: 'Unknown action: ' + body.action };
     }
