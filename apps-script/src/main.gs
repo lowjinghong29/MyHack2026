@@ -301,6 +301,8 @@ function doPost(e) {
         body.budgetSpent, body.burnRate, body.remainingBudget,
         body.topWin || '', body.biggestChallenge || ''
       );
+    } else if (body.action === 'getLearningStatus') {
+      result = getAILearningStatus();
     } else if (body.action === 'getAnalytics') {
       result = { summary: generateAnalyticsSummary() };
     } else if (body.action === 'getMilestoneProgress') {
