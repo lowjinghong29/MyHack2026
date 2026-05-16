@@ -55,7 +55,7 @@ export default function Dashboard() {
     return <div className="flex items-center justify-center h-64 text-g-red text-sm">Failed to load: {error}</div>;
   }
 
-  const { entities, linkages, interactions, milestones = [], outcomes = [] } = raw;
+  const { entities, linkages, interactions, milestones = [], outcomes = [], match_history = [], monthly_reports = [], ai_log = [] } = raw;
   const entityMap = buildEntityMap(entities);
 
   // Milestone stats
@@ -66,6 +66,10 @@ export default function Dashboard() {
 
   // Outcome stats
   const graduated = outcomes.filter(o => o.Outcome_Status === 'Funded' || o.Outcome_Status === 'Graduated').length;
+
+  // Match + report stats
+  const matchesApproved = match_history.filter(m => m.Final_Status === 'APPROVED').length;
+  const matchesDeclined = match_history.filter(m => (m.Final_Status || '').includes('DECLINED')).length;
 
   // KPI calculations
   const activeEntities = entities.filter(e => (e.Status || '').toLowerCase() === 'active').length;
@@ -255,6 +259,38 @@ export default function Dashboard() {
                 Avg score: {Math.round(outcomes.reduce((a, o) => a + Number(o.Success_Score || 0), 0) / outcomes.length)}/100
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Pipeline Activity */}
+      {(match_history.length > 0 || monthly_reports.length > 0 || ai_log.length > 0) && (
+        <div className="grid grid-cols-3 gap-3.5 mb-5">
+          <div className="bg-bg-card border border-border rounded-xl p-4.5">
+            <span className="text-[13px] font-semibold">Match Pipeline</span>
+            <div className="mt-2 space-y-1.5 text-[11px]">
+              <div className="flex justify-between"><span className="text-text-muted">Total matches</span><span className="text-text-primary font-semibold">{match_history.length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Approved</span><span className="text-accent font-semibold">{matchesApproved}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Declined</span><span className="text-g-red font-semibold">{matchesDeclined}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Approval rate</span><span className="text-text-primary font-semibold">{match_history.length > 0 ? Math.round((matchesApproved / match_history.length) * 100) : 0}%</span></div>
+            </div>
+          </div>
+          <div className="bg-bg-card border border-border rounded-xl p-4.5">
+            <span className="text-[13px] font-semibold">Monthly Reports</span>
+            <div className="mt-2 space-y-1.5 text-[11px]">
+              <div className="flex justify-between"><span className="text-text-muted">Reports filed</span><span className="text-text-primary font-semibold">{monthly_reports.length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">With revenue</span><span className="text-accent font-semibold">{monthly_reports.filter(r => Number(r.Revenue) > 0).length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Linkages reporting</span><span className="text-text-primary font-semibold">{new Set(monthly_reports.map(r => r.Linkage_ID)).size}</span></div>
+            </div>
+          </div>
+          <div className="bg-bg-card border border-border rounded-xl p-4.5">
+            <span className="text-[13px] font-semibold">AI Learning</span>
+            <div className="mt-2 space-y-1.5 text-[11px]">
+              <div className="flex justify-between"><span className="text-text-muted">Patterns discovered</span><span className="text-accent font-semibold">{ai_log.length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">High confidence</span><span className="text-g-green font-semibold">{ai_log.filter(l => l.Pattern_Confidence === 'HIGH').length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Outcomes analysed</span><span className="text-text-primary font-semibold">{outcomes.length}</span></div>
+              <div className="flex justify-between"><span className="text-text-muted">Prompt version</span><span className="text-accent font-semibold">v{outcomes.length >= 5 ? 4 : outcomes.length >= 2 ? 3 : match_history.length >= 3 ? 2 : 1}</span></div>
+            </div>
           </div>
         </div>
       )}

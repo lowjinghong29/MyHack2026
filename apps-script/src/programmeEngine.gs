@@ -204,12 +204,26 @@ function determineOutcome(linkageId) {
   var linkage = linkages.filter(function(l) { return l.Linkage_ID === linkageId; })[0];
   var healthScore = linkage ? Number(linkage.Health_Score) : 0;
 
+  // Factor in monthly reports (financial health)
+  var reports = [];
+  try { reports = getSheetData(SHEETS.MONTHLY_REPORTS).filter(function(r) { return r.Linkage_ID === linkageId; }); } catch(e) {}
+  var financialBonus = 0;
+  if (reports.length > 0) {
+    var latestReport = reports[reports.length - 1];
+    if (Number(latestReport.Revenue) > 0) financialBonus += 5;
+    if (Number(latestReport.Customers) > 0) financialBonus += 5;
+    if (Number(latestReport.Remaining_Budget) > 0 && Number(latestReport.Burn_Rate) > 0) {
+      var runway = Number(latestReport.Remaining_Budget) / Number(latestReport.Burn_Rate);
+      if (runway >= 6) financialBonus += 5;
+    }
+  }
+
   var score = 0;
   var status = '';
   var reason = '';
 
-  // Calculate composite score: 60% milestones + 40% engagement health
-  score = Math.round((progress.progressPercent * 0.6) + (healthScore * 0.4));
+  // Calculate composite score: 50% milestones + 30% engagement health + 20% financial
+  score = Math.round((progress.progressPercent * 0.5) + (healthScore * 0.3) + (financialBonus * 4));
 
   if (progress.progressPercent >= 80 && healthScore >= 60) {
     status = 'Graduated';
@@ -398,6 +412,12 @@ function generateAnalyticsSummary() {
   try { milestones = getSheetData(SHEETS.MILESTONES); } catch (e) {}
   var outcomes = [];
   try { outcomes = getSheetData(SHEETS.OUTCOMES); } catch (e) {}
+  var nudgeLogs = [];
+  try { nudgeLogs = getSheetData(SHEETS.NUDGE_LOG); } catch (e) {}
+  var monthlyReports = [];
+  try { monthlyReports = getSheetData(SHEETS.MONTHLY_REPORTS); } catch (e) {}
+  var matchHistory = [];
+  try { matchHistory = getSheetData(SHEETS.MATCH_HISTORY); } catch (e) {}
 
   // Build ecosystem stats
   var activeLinks = linkages.filter(function(l) { return l.Status === 'Active'; });
@@ -435,7 +455,10 @@ function generateAnalyticsSummary() {
     + '- Healthy (>=70): ' + healthy.length + '\n'
     + '- At-Risk (<40): ' + atRisk.length + '\n'
     + '- Total Interactions: ' + interactions.length + '\n'
-    + '- Outcomes Recorded: ' + outcomes.length + '\n\n'
+    + '- Outcomes Recorded: ' + outcomes.length + '\n'
+    + '- Nudges Sent: ' + nudgeLogs.filter(function(n) { return n.Status === 'SENT'; }).length + '\n'
+    + '- Matches Processed: ' + matchHistory.length + ' (' + matchHistory.filter(function(m) { return m.Final_Status === 'APPROVED'; }).length + ' approved)\n'
+    + '- Monthly Reports Filed: ' + monthlyReports.length + '\n\n'
     + 'PER-LINKAGE STATUS:\n';
 
   linkageSummaries.forEach(function(ls) {
