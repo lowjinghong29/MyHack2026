@@ -192,6 +192,7 @@ export default function RegisterCompany() {
               placeholder="e.g. Acme Robotics"
               className={fieldErrors.name ? errorInputCls : inputCls}
               disabled={submitting}
+              maxLength={120}
             />
             {fieldErrors.name && (
               <div className="text-[11px] text-red-400 mt-1">Company name is required.</div>
@@ -303,6 +304,7 @@ export default function RegisterCompany() {
               rows={4}
               className={`${inputCls} resize-none`}
               disabled={submitting}
+              maxLength={1000}
             />
           </div>
 
