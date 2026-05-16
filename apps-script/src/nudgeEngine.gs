@@ -306,7 +306,11 @@ function tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config) {
       contentType: 'application/json',
       payload: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+          thinkingConfig: { thinkingBudget: 0 }
+        }
       }),
       muteHttpExceptions: true
     });
@@ -332,7 +336,8 @@ function tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config) {
 
     const cleaned = stripCodeFences(text).trim();
     if (!cleaned.toLowerCase().includes('</div>')) {
-      Logger.log('Gemini returned truncated HTML (no closing </div>); falling back');
+      Logger.log('Gemini returned ' + cleaned.length + ' chars without </div>; tail: ' +
+        cleaned.slice(-150));
       return null;
     }
     return cleaned;
