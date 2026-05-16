@@ -789,7 +789,7 @@ Auto-approved:  ✅ No flags detected
 
 - ✅ `Linkages` — new active linkage row created
 - ✅ `Milestones` — auto-created from templates (9 per Mentorship, 7 per Investment/Partnership)
-- 🔮 `Monthly_Reports` — template rows created when company submits first report (roadmap)
+- ✅ `Monthly_Reports` — row created when company submits financial update
 - ✅ `Match_History` — approval status updated
 
 ---
@@ -1004,7 +1004,7 @@ STARTUP GROWTH OVERVIEW — All Active Matches
 
 ### Google Sheets Updated
 
-- 🔮 `Monthly_Reports` — new row per monthly update (roadmap — via Google Forms)
+- ✅ `Monthly_Reports` — new row per monthly update (via doPost submitReport action)
 - ✅ `Milestones` — status updated per milestone
 
 ---
@@ -1434,8 +1434,8 @@ Programme 5:  AI match accuracy = 94%  🚀
 
 ### Google Sheets Updated
 
-- 🔮 `AI_Improvement_Log` — patterns learned + prompt version saved (roadmap)
-- 🔮 `Match_History` — outcome correlation added to historical records (roadmap)
+- ✅ `AI_Improvement_Log` — patterns auto-discovered from outcome analysis
+- ✅ `Match_History` — historical match decisions preserved for learning
 
 ---
 
@@ -1456,12 +1456,8 @@ Programme 5:  AI match accuracy = 94%  🚀
 | `Milestones` | Programme milestones per linkage (auto-created on approval) | 45 rows |
 | `Outcomes` | Final programme results with success scores and attribution | 2 rows |
 
-**Roadmap (future phases):**
-
-| Tab Name | Purpose |
-|----------|---------|
-| `Monthly_Reports` | Monthly startup KPIs submitted via Google Forms |
-| `AI_Improvement_Log` | Patterns learned + prompt versions |
+| `Monthly_Reports` | Monthly startup KPIs with automated analysis | 4 rows |
+| `AI_Improvement_Log` | Patterns learned from outcomes (auto-generated) | — |
 
 ---
 

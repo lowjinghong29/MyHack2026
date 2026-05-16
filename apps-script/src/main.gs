@@ -14,7 +14,8 @@ const SHEETS = {
   MATCH_HISTORY: 'Match_History',
   MILESTONES: 'Milestones',
   MONTHLY_REPORTS: 'Monthly_Reports',
-  OUTCOMES: 'Outcomes'
+  OUTCOMES: 'Outcomes',
+  AI_LOG: 'AI_Improvement_Log'
 };
 
 /**
@@ -31,9 +32,12 @@ function onOpen() {
     .addSeparator()
     .addItem('Setup Match_History sheet', 'setupMatchHistorySheet')
     .addItem('Setup All Programme Sheets', 'setupAllProgrammeSheets')
+    .addItem('Setup AI Improvement Log', 'setupAILogSheet')
     .addSeparator()
+    .addItem('Populate Demo Match + Reports', 'populateDemoMatchAndReports')
     .addItem('Record Outcome (demo)', 'recordOutcomeDemo')
-    .addItem('Generate AI Analytics', 'generateAnalyticsSummary')
+    .addItem('Run AI Pattern Analysis', 'analyseAndLogPatterns')
+    .addItem('Generate Analytics Summary', 'generateAnalyticsSummary')
     .addToUi();
 }
 
@@ -158,7 +162,32 @@ function updateCell(sheetName, keyColumn, keyValue, targetColumn, newValue) {
 function doGet(e) {
   var sheetParam = (e && e.parameter && e.parameter.sheet) || 'all';
   var idParam = e && e.parameter && e.parameter.id;
+  var actionParam = e && e.parameter && e.parameter.action;
   var result = {};
+
+  // Handle consent response via URL: ?action=consent&matchId=X&responder=company&decision=ACCEPTED
+  if (actionParam === 'consent') {
+    var consentResult = processConsentResponse(
+      e.parameter.matchId, e.parameter.responder,
+      e.parameter.decision, e.parameter.reason || ''
+    );
+    var statusMsg = consentResult.status === 'APPROVED'
+      ? 'Match approved! Both parties have been notified. Linkage ' + consentResult.linkageId + ' created.'
+      : consentResult.status === 'DECLINED'
+      ? 'Your response has been recorded. We will find the next best match.'
+      : consentResult.status === 'WAITING_FOR_OTHER_PARTY'
+      ? 'Thank you! Waiting for the other party to respond.'
+      : consentResult.status === 'NEEDS_ADMIN_REVIEW'
+      ? 'Match flagged for admin review due to: ' + (consentResult.conflicts || []).join(', ')
+      : 'Response recorded.';
+    return ContentService.createTextOutput(
+      '<html><body style="font-family:Arial;max-width:500px;margin:40px auto;text-align:center;">'
+      + '<h2 style="color:#10b981;">EcoLink AI</h2>'
+      + '<p style="font-size:18px;">' + statusMsg + '</p>'
+      + '<p style="color:#666;font-size:14px;">You may close this page.</p>'
+      + '</body></html>'
+    ).setMimeType(ContentService.MimeType.HTML);
+  }
 
   if (sheetParam === 'all') {
     result.entities = getSheetData(SHEETS.ENTITIES);
@@ -167,6 +196,8 @@ function doGet(e) {
     try { result.milestones = getSheetData(SHEETS.MILESTONES); } catch(e) { result.milestones = []; }
     try { result.outcomes = getSheetData(SHEETS.OUTCOMES); } catch(e) { result.outcomes = []; }
     try { result.match_history = getSheetData(SHEETS.MATCH_HISTORY); } catch(e) { result.match_history = []; }
+    try { result.monthly_reports = getSheetData(SHEETS.MONTHLY_REPORTS); } catch(e) { result.monthly_reports = []; }
+    try { result.ai_log = getSheetData(SHEETS.AI_LOG); } catch(e) { result.ai_log = []; }
   } else if (sheetParam === 'Linkages' && idParam) {
     var linkages = getSheetData(SHEETS.LINKAGES);
     var match = linkages.filter(function(l) { return l.Linkage_ID === idParam; });
@@ -175,7 +206,7 @@ function doGet(e) {
       return i.Linkage_ID === idParam;
     });
   } else {
-    var validSheets = ['Entities', 'Linkages', 'Interactions', 'Match_History', 'Milestones', 'Monthly_Reports', 'Outcomes'];
+    var validSheets = ['Entities', 'Linkages', 'Interactions', 'Match_History', 'Milestones', 'Monthly_Reports', 'Outcomes', 'AI_Improvement_Log'];
     if (validSheets.indexOf(sheetParam) === -1) {
       return ContentService.createTextOutput(JSON.stringify({ error: 'Invalid sheet' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -216,6 +247,12 @@ function doPost(e) {
         body.linkageId, body.outcomeStatus, body.fundingRaised || '',
         body.growthMetric || '', body.mentorRating || '', body.companyRating || '',
         body.lessonsLearned || ''
+      );
+    } else if (body.action === 'submitReport') {
+      result = submitMonthlyReport(
+        body.linkageId, body.month, body.revenue, body.teamSize, body.customers,
+        body.budgetSpent, body.burnRate, body.remainingBudget,
+        body.topWin || '', body.biggestChallenge || ''
       );
     } else if (body.action === 'getAnalytics') {
       result = { summary: generateAnalyticsSummary() };
