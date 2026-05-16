@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Link2, Sparkles, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, Link2, Sparkles, Clock, UserPlus } from 'lucide-react';
 
 const navItems = [
   { label: 'Overview', items: [
@@ -10,6 +10,9 @@ const navItems = [
   { label: 'AI Tools', items: [
     { to: '/ai-match', icon: Sparkles, label: 'AI Matching' },
     { to: '/interactions', icon: Clock, label: 'Interactions' },
+  ]},
+  { label: 'Onboarding', items: [
+    { to: '/register', icon: UserPlus, label: 'Register' },
   ]},
 ];
 

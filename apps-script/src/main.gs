@@ -230,7 +230,16 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var result = {};
 
-    if (body.action === 'sendConsent') {
+    if (body.action === 'registerEntity') {
+      var entId = 'ENT-' + Utilities.getUuid().substring(0, 6).toUpperCase();
+      appendRow(SHEETS.ENTITIES, [
+        entId, body.name || '', body.role || 'Company', body.email || '',
+        body.industryTags || '', body.expertiseNeeds || '', 'Active'
+      ]);
+      result = { entityId: entId, name: body.name, role: body.role };
+    } else if (body.action === 'aiMatch') {
+      result = findMatches(body.entityId, body.matchType || 'Mentorship');
+    } else if (body.action === 'sendConsent') {
       result = sendConsentEmails(
         body.companyId, body.mentorId,
         body.matchScore, body.matchReason, body.linkageType || 'Mentorship'
