@@ -71,8 +71,13 @@ function runNudgeEngine(opts) {
     const a = buildBestNudgeBody(entityA, entityB, linkage, daysSince, config);
     const b = buildBestNudgeBody(entityB, entityA, linkage, daysSince, config);
 
-    if (dispatchNudge(linkage, entityA, a.body, a.aiUsed, daysSince, config)) stats.sent++;
-    if (dispatchNudge(linkage, entityB, b.body, b.aiUsed, daysSince, config)) stats.sent++;
+    if (config.requireApproval) {
+      if (queueNudge(linkage, entityA, entityB, a.body, a.aiUsed, daysSince)) stats.queued++;
+      if (queueNudge(linkage, entityB, entityA, b.body, b.aiUsed, daysSince)) stats.queued++;
+    } else {
+      if (dispatchNudge(linkage, entityA, a.body, a.aiUsed, daysSince, config)) stats.sent++;
+      if (dispatchNudge(linkage, entityB, b.body, b.aiUsed, daysSince, config)) stats.sent++;
+    }
   });
 
   postChatSummary(stats, config);
@@ -123,6 +128,80 @@ function dispatchNudge(linkage, recipient, htmlBody, aiUsed, daysSince, config) 
     logNudge(linkage.Linkage_ID, recipient.Email, daysSince, aiUsed, 'FAILED', String(err));
     return false;
   }
+}
+
+/**
+ * Queues a nudge for human approval instead of sending immediately.
+ * Implements the PRD "AI as copilot, not replacement" stance: the AI
+ * drafts, the programme owner approves, the system sends.
+ * Returns true if a row was successfully queued.
+ */
+function queueNudge(linkage, recipient, partner, htmlBody, aiUsed, daysSince) {
+  if (!isValidEmail(recipient.Email)) {
+    logNudge(linkage.Linkage_ID, recipient.Email || '(missing)', daysSince, aiUsed,
+      'SKIPPED_INVALID_EMAIL', '');
+    return false;
+  }
+  appendRow(SHEETS.PENDING_NUDGES, [
+    generateUUID(),
+    formatTimestamp(new Date()),
+    linkage.Linkage_ID,
+    recipient.Email,
+    recipient.Name || '',
+    partner.Name || '',
+    daysSince,
+    aiUsed,
+    htmlBody,
+    false,
+    'PENDING',
+    ''
+  ]);
+  return true;
+}
+
+/**
+ * Reads Pending_Nudges and sends every row where Approved=TRUE and
+ * Status is not yet SENT. Wired to the EcoLink sheet menu so a
+ * programme owner reviews drafts on the sheet, ticks the boxes they
+ * approve, then triggers send with one click.
+ */
+function sendApprovedNudges() {
+  const pending = getSheetData(SHEETS.PENDING_NUDGES);
+  let sent = 0;
+  let skipped = 0;
+
+  pending.forEach(row => {
+    const approved = row.Approved === true || String(row.Approved).toUpperCase() === 'TRUE';
+    if (!approved) return;
+    if (row.Status === 'SENT' || row.Status === 'FAILED') return;
+    if (!isValidEmail(row.Recipient_Email)) {
+      updateCell(SHEETS.PENDING_NUDGES, 'Pending_ID', row.Pending_ID, 'Status', 'SKIPPED_INVALID');
+      skipped++;
+      return;
+    }
+
+    const aiUsed = row.AI_Used === true || String(row.AI_Used).toUpperCase() === 'TRUE';
+    const subject = `EcoLink: Time to reconnect — ${row.Partner_Name || ''}`.trim();
+
+    try {
+      MailApp.sendEmail({
+        to: row.Recipient_Email,
+        subject: subject,
+        htmlBody: row.Body
+      });
+      updateCell(SHEETS.PENDING_NUDGES, 'Pending_ID', row.Pending_ID, 'Status', 'SENT');
+      logNudge(row.Linkage_ID, row.Recipient_Email, row.Days_Since, aiUsed,
+        'SENT_APPROVED', '');
+      sent++;
+    } catch (err) {
+      updateCell(SHEETS.PENDING_NUDGES, 'Pending_ID', row.Pending_ID, 'Status', 'FAILED');
+      logNudge(row.Linkage_ID, row.Recipient_Email, row.Days_Since, aiUsed,
+        'FAILED', String(err));
+    }
+  });
+
+  Logger.log(`Approved nudges: sent=${sent}, skipped=${skipped}`);
+  return { sent: sent, skipped: skipped };
 }
 
 /**
