@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { fetchAllData, buildEntityMap } from '../lib/api';
 
+function fmtDate(raw) {
+  if (!raw) return '—';
+  const d = new Date(raw);
+  return isNaN(d) ? raw : d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function HealthBar({ score }) {
   const val = Number(score);
   const color = val >= 70 ? 'bg-g-green' : val >= 40 ? 'bg-g-yellow' : 'bg-g-red';
@@ -102,8 +108,8 @@ export default function Linkages() {
                       {linkage.Linkage_Type}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Start_Date}</td>
-                  <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Last_Interaction_Date}</td>
+                  <td className="px-4 py-3 text-xs text-text-secondary">{fmtDate(linkage.Start_Date)}</td>
+                  <td className="px-4 py-3 text-xs text-text-secondary">{fmtDate(linkage.Last_Interaction_Date)}</td>
                   <td className="px-4 py-3"><HealthBar score={linkage.Health_Score} /></td>
                   <td className="px-4 py-3">
                     <Link
