@@ -88,7 +88,14 @@ function installTriggers() {
     .everyMinutes(15)
     .create();
 
-  Logger.log('Triggers installed: scan @6AM daily, nudge @9AM daily, sendApproved every 15 min.');
+  // Daily milestone overdue check at 7 AM MYT
+  ScriptApp.newTrigger('checkOverdueMilestones')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .create();
+
+  Logger.log('Triggers installed: scan @6AM, overdue @7AM, nudge @9AM, sendApproved every 15 min.');
 }
 
 /**
@@ -157,6 +164,9 @@ function doGet(e) {
     result.entities = getSheetData(SHEETS.ENTITIES);
     result.linkages = getSheetData(SHEETS.LINKAGES);
     result.interactions = getSheetData(SHEETS.INTERACTIONS);
+    try { result.milestones = getSheetData(SHEETS.MILESTONES); } catch(e) { result.milestones = []; }
+    try { result.outcomes = getSheetData(SHEETS.OUTCOMES); } catch(e) { result.outcomes = []; }
+    try { result.match_history = getSheetData(SHEETS.MATCH_HISTORY); } catch(e) { result.match_history = []; }
   } else if (sheetParam === 'Linkages' && idParam) {
     var linkages = getSheetData(SHEETS.LINKAGES);
     var match = linkages.filter(function(l) { return l.Linkage_ID === idParam; });
@@ -198,6 +208,19 @@ function doPost(e) {
       result = processConsentResponse(
         body.matchId, body.responder, body.decision, body.reason || ''
       );
+    } else if (body.action === 'updateMilestone') {
+      updateMilestone(body.milestoneId, body.status, body.progress, body.evidenceLink || '');
+      result = { success: true, milestoneId: body.milestoneId };
+    } else if (body.action === 'recordOutcome') {
+      result = recordOutcome(
+        body.linkageId, body.outcomeStatus, body.fundingRaised || '',
+        body.growthMetric || '', body.mentorRating || '', body.companyRating || '',
+        body.lessonsLearned || ''
+      );
+    } else if (body.action === 'getAnalytics') {
+      result = { summary: generateAnalyticsSummary() };
+    } else if (body.action === 'getMilestoneProgress') {
+      result = getMilestoneProgress(body.linkageId);
     } else {
       result = { error: 'Unknown action: ' + body.action };
     }

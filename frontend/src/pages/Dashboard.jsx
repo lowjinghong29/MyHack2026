@@ -55,8 +55,17 @@ export default function Dashboard() {
     return <div className="flex items-center justify-center h-64 text-g-red text-sm">Failed to load: {error}</div>;
   }
 
-  const { entities, linkages, interactions } = raw;
+  const { entities, linkages, interactions, milestones = [], outcomes = [] } = raw;
   const entityMap = buildEntityMap(entities);
+
+  // Milestone stats
+  const msCompleted = milestones.filter(m => m.Completion_Status === 'Completed').length;
+  const msOverdue = milestones.filter(m => m.Completion_Status === 'Overdue').length;
+  const msTotal = milestones.length;
+  const msPercent = msTotal > 0 ? Math.round((msCompleted / msTotal) * 100) : 0;
+
+  // Outcome stats
+  const graduated = outcomes.filter(o => o.Outcome_Status === 'Funded' || o.Outcome_Status === 'Graduated').length;
 
   // KPI calculations
   const activeEntities = entities.filter(e => (e.Status || '').toLowerCase() === 'active').length;
@@ -213,6 +222,42 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Milestone + Outcome Summary */}
+      {msTotal > 0 && (
+        <div className="grid grid-cols-2 gap-3.5 mb-5">
+          <div className="bg-bg-card border border-border rounded-xl p-4.5">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[13px] font-semibold">Milestone Progress</span>
+              <span className="text-[11px] text-text-muted">{msCompleted}/{msTotal} completed</span>
+            </div>
+            <div className="flex h-3 rounded-full overflow-hidden bg-white/5 mb-2">
+              <div className="transition-all duration-500" style={{ width: `${msPercent}%`, background: ACCENT }} />
+            </div>
+            <div className="flex gap-4 text-[11px]">
+              <span className="text-accent">{msCompleted} completed</span>
+              <span className="text-g-yellow">{milestones.filter(m => m.Completion_Status === 'In Progress').length} in progress</span>
+              <span className="text-g-red">{msOverdue} overdue</span>
+            </div>
+          </div>
+          <div className="bg-bg-card border border-border rounded-xl p-4.5">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[13px] font-semibold">Programme Outcomes</span>
+              <span className="text-[11px] text-text-muted">{outcomes.length} recorded</span>
+            </div>
+            <div className="flex gap-4 text-[11px]">
+              <span className="text-accent">{graduated} graduated/funded</span>
+              <span className="text-g-yellow">{outcomes.filter(o => o.Outcome_Status === 'Stalled').length} stalled</span>
+              <span className="text-g-red">{outcomes.filter(o => o.Outcome_Status === 'Churned').length} churned</span>
+            </div>
+            {outcomes.length > 0 && (
+              <div className="mt-2 text-[11px] text-text-muted">
+                Avg score: {Math.round(outcomes.reduce((a, o) => a + Number(o.Success_Score || 0), 0) / outcomes.length)}/100
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Row: Trend + Health Ring */}
       <div className="grid grid-cols-[2fr_1fr] gap-3.5 mb-5">
