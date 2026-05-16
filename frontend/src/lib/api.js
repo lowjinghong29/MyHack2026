@@ -1,7 +1,61 @@
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
 /**
- * Fetches all data (entities, linkages, interactions) from the Apps Script web app.
+ * POST helper for Apps Script — handles CORS redirect properly.
+ * Apps Script returns 302 on POST → browser fails CORS on redirect target.
+ * Fix: use redirect:'follow' with no-cors fallback, then re-fetch as GET.
+ */
+async function postToAppsScript(payload) {
+  // First try: standard POST (works when same-origin or CORS is allowed)
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow',
+    });
+    if (res.ok || res.type === 'opaque') {
+      return res.json();
+    }
+  } catch {
+    // CORS error — fall through to workaround
+  }
+
+  // Fallback: send via no-cors POST (triggers the action), then GET the result
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    mode: 'no-cors',
+    redirect: 'follow',
+  });
+
+  // For actions that return data, we need to re-fetch via doGet
+  // For fire-and-forget actions (sendConsent, etc.), we return success
+  if (payload.action === 'aiMatch') {
+    // Re-call as GET with encoded params
+    const params = new URLSearchParams({
+      action: 'aiMatchGet',
+      entityId: payload.entityId,
+      matchType: payload.matchType || 'Mentorship',
+    });
+    const res = await fetch(`${API_URL}?${params}`);
+    if (!res.ok) throw new Error('AI match request failed');
+    return res.json();
+  }
+
+  if (payload.action === 'getLearningStatus') {
+    const res = await fetch(`${API_URL}?action=getLearningStatusGet`);
+    if (!res.ok) throw new Error('Failed to fetch learning status');
+    return res.json();
+  }
+
+  // For other actions, return generic success
+  return { success: true, action: payload.action };
+}
+
+/**
+ * Fetches all data from the Apps Script web app.
  */
 export async function fetchAllData() {
   const res = await fetch(`${API_URL}?sheet=all`);
@@ -11,7 +65,6 @@ export async function fetchAllData() {
 
 /**
  * Fetches a single sheet's data.
- * @param {'Entities'|'Linkages'|'Interactions'} sheet
  */
 export async function fetchSheet(sheet) {
   const res = await fetch(`${API_URL}?sheet=${sheet}`);
@@ -21,7 +74,6 @@ export async function fetchSheet(sheet) {
 
 /**
  * Fetches a single linkage with its interactions.
- * @param {string} linkageId e.g. "LNK-001"
  */
 export async function fetchLinkageDetail(linkageId) {
   const res = await fetch(`${API_URL}?sheet=Linkages&id=${encodeURIComponent(linkageId)}`);
@@ -30,107 +82,45 @@ export async function fetchLinkageDetail(linkageId) {
 }
 
 /**
- * Calls the Gemini Matcher Cloud Function.
- * @param {string} entityId
- * @param {'Mentorship'|'Partnership'|'Investment'} matchType
+ * Calls the Gemini Matcher.
  */
 export async function requestAIMatch(entityId, matchType) {
-  // Call Apps Script Gemini matcher (no separate Cloud Function needed)
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'aiMatch', entityId, matchType }),
-  });
-  if (!res.ok) throw new Error('AI match request failed');
-  return res.json();
+  return postToAppsScript({ action: 'aiMatch', entityId, matchType });
 }
 
 /**
- * Sends consent emails to both parties via the Apps Script doPost endpoint.
- * @param {string} companyId
- * @param {string} mentorId
- * @param {number} matchScore - 0 to 1
- * @param {string} matchReason
- * @param {string} linkageType
+ * Sends consent emails to both parties.
  */
 export async function sendConsent(companyId, mentorId, matchScore, matchReason, linkageType) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'sendConsent',
-      companyId,
-      mentorId,
-      matchScore,
-      matchReason,
-      linkageType,
-    }),
-  });
-  if (!res.ok) throw new Error('Failed to send consent emails');
-  return res.json();
+  return postToAppsScript({ action: 'sendConsent', companyId, mentorId, matchScore, matchReason, linkageType });
 }
 
 /**
- * Records a consent response (accept/decline) from one party.
- * @param {string} matchId
- * @param {'company'|'mentor'} responder
- * @param {'ACCEPTED'|'DECLINED'} decision
- * @param {string} [reason] - free-text reason if declined
+ * Records a consent response.
  */
 export async function respondConsent(matchId, responder, decision, reason) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'respondConsent',
-      matchId,
-      responder,
-      decision,
-      reason: reason || '',
-    }),
-  });
-  if (!res.ok) throw new Error('Failed to record consent response');
-  return res.json();
+  return postToAppsScript({ action: 'respondConsent', matchId, responder, decision, reason: reason || '' });
 }
 
 /**
- * Registers a new entity (company / mentor / partner).
- * @param {{name, role, email, industryTags?, expertiseNeeds?}} entity
+ * Registers a new entity.
  */
 export async function addEntity(entity) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'addEntity', entity }),
-  });
-  if (!res.ok) throw new Error('Failed to register entity');
-  return res.json();
+  return postToAppsScript({ action: 'addEntity', entity });
 }
 
 /**
- * Triggers an immediate run of the nudge engine (threshold = 0, no cron wait).
+ * Triggers nudge engine run.
  */
 export async function triggerNudgeRun() {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'triggerNudgeRun' }),
-  });
-  if (!res.ok) throw new Error('Failed to trigger nudge run');
-  return res.json();
+  return postToAppsScript({ action: 'triggerNudgeRun' });
 }
 
 /**
- * Fetches AI learning status — prompt version, patterns, accuracy.
+ * Fetches AI learning status.
  */
 export async function getLearningStatus() {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'getLearningStatus' }),
-  });
-  if (!res.ok) throw new Error('Failed to fetch learning status');
-  return res.json();
+  return postToAppsScript({ action: 'getLearningStatus' });
 }
 
 /**

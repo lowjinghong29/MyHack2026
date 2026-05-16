@@ -203,6 +203,20 @@ function doGet(e) {
   var actionParam = e && e.parameter && e.parameter.action;
   var result = {};
 
+  // Handle AI Match via GET (CORS fallback): ?action=aiMatchGet&entityId=X&matchType=Mentorship
+  if (actionParam === 'aiMatchGet') {
+    var matchResult = findMatches(e.parameter.entityId, e.parameter.matchType || 'Mentorship');
+    return ContentService.createTextOutput(JSON.stringify(matchResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Handle learning status via GET (CORS fallback): ?action=getLearningStatusGet
+  if (actionParam === 'getLearningStatusGet') {
+    var learnResult = getAILearningStatus();
+    return ContentService.createTextOutput(JSON.stringify(learnResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // Handle consent response via URL: ?action=consent&matchId=X&responder=company&decision=ACCEPTED
   if (actionParam === 'consent') {
     var consentResult = processConsentResponse(
