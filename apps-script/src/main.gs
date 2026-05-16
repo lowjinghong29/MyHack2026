@@ -82,3 +82,41 @@ function updateCell(sheetName, keyColumn, keyValue, targetColumn, newValue) {
   }
   return false;
 }
+
+/**
+ * Web App endpoint — serves sheet data as JSON.
+ * Deploy as: Execute as "Me", Access "Anyone".
+ *
+ * Query params:
+ *   ?sheet=Entities | Linkages | Interactions
+ *   ?sheet=all  (returns all three)
+ *   ?sheet=Linkages&id=LNK-001  (single linkage with its interactions)
+ */
+function doGet(e) {
+  var sheetParam = (e && e.parameter && e.parameter.sheet) || 'all';
+  var idParam = e && e.parameter && e.parameter.id;
+  var result = {};
+
+  if (sheetParam === 'all') {
+    result.entities = getSheetData(SHEETS.ENTITIES);
+    result.linkages = getSheetData(SHEETS.LINKAGES);
+    result.interactions = getSheetData(SHEETS.INTERACTIONS);
+  } else if (sheetParam === 'Linkages' && idParam) {
+    var linkages = getSheetData(SHEETS.LINKAGES);
+    var match = linkages.filter(function(l) { return l.Linkage_ID === idParam; });
+    result.linkage = match.length > 0 ? match[0] : null;
+    result.interactions = getSheetData(SHEETS.INTERACTIONS).filter(function(i) {
+      return i.Linkage_ID === idParam;
+    });
+  } else {
+    var validSheets = ['Entities', 'Linkages', 'Interactions'];
+    if (validSheets.indexOf(sheetParam) === -1) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'Invalid sheet' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    result[sheetParam.toLowerCase()] = getSheetData(sheetParam);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}

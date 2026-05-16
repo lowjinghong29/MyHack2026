@@ -1,38 +1,116 @@
+import { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { Users, Link2, MessageSquare, AlertTriangle } from 'lucide-react';
-import { entities, linkages, interactions, recentActivity } from '../lib/sampleData';
-
-const chartData = [
-  { day: '1', value: 8 }, { day: '2', value: 12 }, { day: '3', value: 7 },
-  { day: '4', value: 15 }, { day: '5', value: 11 }, { day: '6', value: 18 },
-  { day: '7', value: 14 }, { day: '8', value: 22 }, { day: '9', value: 17 },
-  { day: '10', value: 25 }, { day: '11', value: 20 }, { day: '12', value: 28 },
-  { day: '13', value: 23 }, { day: '14', value: 30 }, { day: '15', value: 26 },
-];
-
-const kpis = [
-  { label: 'Total Entities', value: entities.length, change: '+12 this week', icon: Users, color: 'g-blue' },
-  { label: 'Active Linkages', value: linkages.length, change: '+5 this week', icon: Link2, color: 'g-green' },
-  { label: 'Interactions (30d)', value: interactions.length, change: '+28% vs last month', icon: MessageSquare, color: 'g-yellow' },
-  { label: 'At-Risk Linkages', value: linkages.filter(l => l.Health_Score < 40).length, change: 'Need attention', icon: AlertTriangle, color: 'g-red', isDown: true },
-];
+import { Users, Link2, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react';
+import { fetchAllData, buildEntityMap } from '../lib/api';
 
 const colorMap = {
-  'g-blue': { text: 'text-g-blue', bg: 'bg-g-blue', border: 'bg-g-blue' },
-  'g-green': { text: 'text-g-green', bg: 'bg-g-green', border: 'bg-g-green' },
+  'g-blue':   { text: 'text-g-blue',   bg: 'bg-g-blue',   border: 'bg-g-blue' },
+  'g-green':  { text: 'text-g-green',  bg: 'bg-g-green',  border: 'bg-g-green' },
   'g-yellow': { text: 'text-g-yellow', bg: 'bg-g-yellow', border: 'bg-g-yellow' },
-  'g-red': { text: 'text-g-red', bg: 'bg-g-red', border: 'bg-g-red' },
+  'g-red':    { text: 'text-g-red',    bg: 'bg-g-red',    border: 'bg-g-red' },
 };
 
 const badgeStyles = {
-  'g-green': 'bg-g-green/15 text-g-green',
-  'g-blue': 'bg-g-blue/15 text-g-blue',
+  'g-green':  'bg-g-green/15 text-g-green',
+  'g-blue':   'bg-g-blue/15 text-g-blue',
   'g-yellow': 'bg-g-yellow/15 text-g-yellow',
-  'g-red': 'bg-g-red/15 text-g-red',
+  'g-red':    'bg-g-red/15 text-g-red',
 };
 
+function buildChartData(interactions) {
+  const counts = {};
+  const now = new Date();
+  for (let i = 14; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    counts[key] = 0;
+  }
+  interactions.forEach(item => {
+    const raw = item.Date || item.Timestamp || '';
+    if (!raw) return;
+    const key = new Date(raw).toISOString().slice(0, 10);
+    if (key in counts) counts[key]++;
+  });
+  return Object.entries(counts).map(([date, value], idx) => ({
+    day: String(idx + 1),
+    value,
+  }));
+}
+
+function buildActivityFeed(interactions, entityMap) {
+  const sorted = [...interactions].sort((a, b) => {
+    const ta = new Date(a.Date || a.Timestamp || 0).getTime();
+    const tb = new Date(b.Date || b.Timestamp || 0).getTime();
+    return tb - ta;
+  });
+
+  return sorted.slice(0, 6).map(item => {
+    const entityA = entityMap[item.Entity_A_ID] || { Name: item.Entity_A_ID };
+    const entityB = entityMap[item.Entity_B_ID] || { Name: item.Entity_B_ID };
+    const type = item.Interaction_Type || 'Interaction';
+    const score = Number(item.Sentiment_Score || 0);
+    const color = score >= 70 ? 'g-green' : score >= 40 ? 'g-yellow' : 'g-red';
+    const raw = item.Date || item.Timestamp || '';
+    const time = raw ? new Date(raw).toLocaleDateString() : '—';
+
+    return {
+      text: `${entityA.Name} — ${entityB.Name}: ${type}`,
+      badge: type,
+      color,
+      time,
+    };
+  });
+}
+
 export default function Dashboard() {
-  const avgHealth = Math.round(linkages.reduce((a, l) => a + l.Health_Score, 0) / linkages.length);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [kpis, setKpis] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [avgHealth, setAvgHealth] = useState(0);
+
+  useEffect(() => {
+    fetchAllData()
+      .then(({ entities, linkages, interactions }) => {
+        const entityMap = buildEntityMap(entities);
+
+        const atRisk = linkages.filter(l => Number(l.Health_Score) < 40).length;
+        const totalHealth = linkages.reduce((acc, l) => acc + Number(l.Health_Score || 0), 0);
+        const avg = linkages.length ? Math.round(totalHealth / linkages.length) : 0;
+
+        setKpis([
+          { label: 'Total Entities',     value: entities.length,     change: '+12 this week',       icon: Users,         color: 'g-blue'   },
+          { label: 'Active Linkages',    value: linkages.length,     change: '+5 this week',        icon: Link2,         color: 'g-green'  },
+          { label: 'Interactions (30d)', value: interactions.length, change: '+28% vs last month',  icon: MessageSquare, color: 'g-yellow' },
+          { label: 'At-Risk Linkages',   value: atRisk,              change: 'Need attention',      icon: AlertTriangle, color: 'g-red',   isDown: true },
+        ]);
+
+        setAvgHealth(avg);
+        setChartData(buildChartData(interactions));
+        setActivityFeed(buildActivityFeed(interactions, entityMap));
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-text-muted">
+        <Loader2 size={24} className="animate-spin mr-2" />
+        <span className="text-sm">Loading dashboard…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-g-red text-sm">
+        Failed to load data: {error}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -74,7 +152,7 @@ export default function Dashboard() {
         <div className="bg-bg-card border border-border rounded-xl p-4.5">
           <div className="flex justify-between items-center mb-4">
             <span className="text-[13px] font-semibold">Interaction Trend</span>
-            <span className="text-[11px] text-text-muted">Last 30 days</span>
+            <span className="text-[11px] text-text-muted">Last 15 days</span>
           </div>
           <ResponsiveContainer width="100%" height={130}>
             <AreaChart data={chartData}>
@@ -123,14 +201,17 @@ export default function Dashboard() {
       <div className="bg-bg-card border border-border rounded-xl p-4.5">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[13px] font-semibold">Recent Activity</span>
-          <span className="text-[11px] text-text-muted">Today</span>
+          <span className="text-[11px] text-text-muted">Latest interactions</span>
         </div>
-        {recentActivity.map((item, i) => (
+        {activityFeed.length === 0 && (
+          <div className="text-center py-6 text-text-muted text-sm">No recent activity</div>
+        )}
+        {activityFeed.map((item, i) => (
           <div key={i} className="flex items-center gap-3 py-2.5 border-b border-border last:border-b-0">
             <div className={`w-2 h-2 rounded-full bg-${item.color} flex-shrink-0`} />
-            <span className="flex-1 text-xs text-text-secondary" dangerouslySetInnerHTML={{
-              __html: item.text.replace(/(\b[A-Z][a-z]+ [A-Z][a-z]+\b|LNK-\d+|Gemini AI)/g, '<strong class="text-text-primary font-semibold">$1</strong>')
-            }} />
+            <span className="flex-1 text-xs text-text-secondary">
+              {item.text}
+            </span>
             <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold whitespace-nowrap ${badgeStyles[item.color]}`}>
               {item.badge}
             </span>

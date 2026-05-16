@@ -1,17 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
-import { linkages, getEntityName } from '../lib/sampleData';
+import { ExternalLink, Loader2 } from 'lucide-react';
+import { fetchAllData, buildEntityMap } from '../lib/api';
 
 function HealthBar({ score }) {
-  const color = score >= 70 ? 'bg-g-green' : score >= 40 ? 'bg-g-yellow' : 'bg-g-red';
-  const textColor = score >= 70 ? 'text-g-green' : score >= 40 ? 'text-g-yellow' : 'text-g-red';
+  const val = Number(score);
+  const color = val >= 70 ? 'bg-g-green' : val >= 40 ? 'bg-g-yellow' : 'bg-g-red';
+  const textColor = val >= 70 ? 'text-g-green' : val >= 40 ? 'text-g-yellow' : 'text-g-red';
 
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 rounded-full bg-white/5 overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${score}%` }} />
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${val}%` }} />
       </div>
-      <span className={`text-xs font-semibold ${textColor}`}>{score}</span>
+      <span className={`text-xs font-semibold ${textColor}`}>{val}</span>
     </div>
   );
 }
@@ -23,7 +25,40 @@ const typeColor = {
 };
 
 export default function Linkages() {
-  const sorted = [...linkages].sort((a, b) => b.Health_Score - a.Health_Score);
+  const [linkages, setLinkages] = useState([]);
+  const [entityMap, setEntityMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchAllData()
+      .then(data => {
+        setEntityMap(buildEntityMap(data.entities));
+        const sorted = [...data.linkages].sort(
+          (a, b) => Number(b.Health_Score) - Number(a.Health_Score)
+        );
+        setLinkages(sorted);
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 gap-2 text-text-muted">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-sm">Loading linkages…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-g-red text-sm">
+        Failed to load data: {error}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -46,34 +81,41 @@ export default function Linkages() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map(linkage => (
-              <tr key={linkage.Linkage_ID} className="border-b border-border last:border-b-0 hover:bg-bg-card-hover transition-colors">
-                <td className="px-4 py-3 text-xs font-mono text-text-muted">{linkage.Linkage_ID}</td>
-                <td className="px-4 py-3">
-                  <div className="text-xs">
-                    <span className="font-semibold text-text-primary">{getEntityName(linkage.Entity_A_ID)}</span>
-                    <span className="text-text-muted mx-1.5">&harr;</span>
-                    <span className="font-semibold text-text-primary">{getEntityName(linkage.Entity_B_ID)}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${typeColor[linkage.Linkage_Type]}`}>
-                    {linkage.Linkage_Type}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Start_Date}</td>
-                <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Last_Interaction_Date}</td>
-                <td className="px-4 py-3"><HealthBar score={linkage.Health_Score} /></td>
-                <td className="px-4 py-3">
-                  <Link
-                    to={`/linkages/${linkage.Linkage_ID}`}
-                    className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-g-blue transition-colors cursor-pointer inline-flex"
-                  >
-                    <ExternalLink size={14} />
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {linkages.map(linkage => {
+              const nameA = entityMap[linkage.Entity_A_ID]?.Name ?? linkage.Entity_A_ID;
+              const nameB = entityMap[linkage.Entity_B_ID]?.Name ?? linkage.Entity_B_ID;
+              return (
+                <tr
+                  key={linkage.Linkage_ID}
+                  className="border-b border-border last:border-b-0 hover:bg-bg-card-hover transition-colors"
+                >
+                  <td className="px-4 py-3 text-xs font-mono text-text-muted">{linkage.Linkage_ID}</td>
+                  <td className="px-4 py-3">
+                    <div className="text-xs">
+                      <span className="font-semibold text-text-primary">{nameA}</span>
+                      <span className="text-text-muted mx-1.5">&harr;</span>
+                      <span className="font-semibold text-text-primary">{nameB}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${typeColor[linkage.Linkage_Type] ?? 'bg-white/10 text-text-secondary'}`}>
+                      {linkage.Linkage_Type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Start_Date}</td>
+                  <td className="px-4 py-3 text-xs text-text-secondary">{linkage.Last_Interaction_Date}</td>
+                  <td className="px-4 py-3"><HealthBar score={linkage.Health_Score} /></td>
+                  <td className="px-4 py-3">
+                    <Link
+                      to={`/linkages/${linkage.Linkage_ID}`}
+                      className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-g-blue transition-colors cursor-pointer inline-flex"
+                    >
+                      <ExternalLink size={14} />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

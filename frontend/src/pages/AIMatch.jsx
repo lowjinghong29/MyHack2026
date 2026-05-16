@@ -1,28 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
-import { entities } from '../lib/sampleData';
-
-const fakeMatches = [
-  { entityId: 'ENT-001', name: 'Ahmad Rizal', role: 'Mentor', score: 0.94, reason: 'Strong FinTech expertise aligns with payment infrastructure needs. 10+ years mentoring early-stage startups in Southeast Asia.' },
-  { entityId: 'ENT-005', name: 'James Wong', role: 'Mentor', score: 0.87, reason: 'Cloud architecture expertise matches technical scaling needs. Previously mentored 3 successful HealthTech startups.' },
-  { entityId: 'ENT-006', name: 'Aisha Rahman', role: 'Partner', score: 0.81, reason: 'SDG-aligned investment focus complements company mission. Active in Southeast Asian impact ecosystem.' },
-];
+import { fetchSheet, requestAIMatch } from '../lib/api';
 
 export default function AIMatch() {
+  const [entities, setEntities] = useState([]);
+  const [entitiesLoading, setEntitiesLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState('');
   const [matchType, setMatchType] = useState('Mentorship');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleMatch = () => {
+  useEffect(() => {
+    fetchSheet('Entities')
+      .then(data => setEntities(data.entities || []))
+      .catch(() => setEntities([]))
+      .finally(() => setEntitiesLoading(false));
+  }, []);
+
+  const handleMatch = async () => {
     setLoading(true);
     setResults(null);
-    // Simulate Gemini API call
-    setTimeout(() => {
+    setError(null);
+    try {
+      const data = await requestAIMatch(selectedEntity, matchType);
+      setResults(data.matches || []);
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setLoading(false);
-      setResults(fakeMatches);
-    }, 2000);
+    }
   };
+
+  const activeEntities = entities.filter(e => e.Status === 'Active');
 
   return (
     <div>
@@ -30,7 +40,7 @@ export default function AIMatch() {
         <Sparkles size={20} className="text-g-blue" />
         <h1 className="text-xl font-bold">AI Match Request</h1>
         <span className="text-[10px] px-2 py-0.5 rounded-md bg-g-blue/15 text-g-blue font-semibold ml-2">
-          Powered by Gemini 3.1
+          Powered by Gemini 2.0
         </span>
       </div>
 
@@ -45,14 +55,21 @@ export default function AIMatch() {
             <select
               value={selectedEntity}
               onChange={e => setSelectedEntity(e.target.value)}
-              className="w-full bg-bg-primary border border-border rounded-lg py-2.5 px-3 text-xs text-text-primary focus:outline-none focus:border-g-blue/50 cursor-pointer"
+              disabled={entitiesLoading}
+              className="w-full bg-bg-primary border border-border rounded-lg py-2.5 px-3 text-xs text-text-primary focus:outline-none focus:border-g-blue/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Select an entity...</option>
-              {entities.filter(e => e.Status === 'Active').map(e => (
-                <option key={e.Entity_ID} value={e.Entity_ID}>
-                  {e.Name} ({e.Role})
-                </option>
-              ))}
+              {entitiesLoading ? (
+                <option value="">Loading entities...</option>
+              ) : (
+                <>
+                  <option value="">Select an entity...</option>
+                  {activeEntities.map(e => (
+                    <option key={e.Entity_ID} value={e.Entity_ID}>
+                      {e.Name} ({e.Role})
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
           <div>
@@ -79,7 +96,7 @@ export default function AIMatch() {
 
         <button
           onClick={handleMatch}
-          disabled={!selectedEntity || loading}
+          disabled={!selectedEntity || loading || entitiesLoading}
           className="px-6 py-2.5 bg-g-blue text-white rounded-lg text-xs font-semibold hover:bg-g-blue/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {loading ? (
@@ -96,7 +113,14 @@ export default function AIMatch() {
         </button>
       </div>
 
-      {/* Results */}
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4 text-red-400 text-xs">
+          {error}
+        </div>
+      )}
+
+      {/* Loading State */}
       {loading && (
         <div className="bg-bg-card border border-border rounded-xl p-10 flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-g-blue/15 flex items-center justify-center">
@@ -107,7 +131,8 @@ export default function AIMatch() {
         </div>
       )}
 
-      {results && (
+      {/* Results */}
+      {results && !loading && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-sm font-semibold">Top Matches</span>
@@ -147,7 +172,8 @@ export default function AIMatch() {
         </div>
       )}
 
-      {!loading && !results && (
+      {/* Empty State */}
+      {!loading && !results && !error && (
         <div className="bg-bg-card border border-border rounded-xl p-10 flex flex-col items-center gap-3 text-center">
           <Sparkles size={32} className="text-text-muted" />
           <div className="text-sm text-text-muted">Select an entity and click "Find Matches" to get AI-powered recommendations</div>

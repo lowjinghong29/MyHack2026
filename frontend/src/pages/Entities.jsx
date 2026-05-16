@@ -1,31 +1,60 @@
-import { useState } from 'react';
-import { Search, Filter, Plus } from 'lucide-react';
-import { entities } from '../lib/sampleData';
+import { useState, useEffect } from 'react';
+import { Search, Plus, Loader2 } from 'lucide-react';
+import { fetchSheet } from '../lib/api';
 
 const roleBadge = {
-  Mentor: 'bg-g-blue/15 text-g-blue',
+  Mentor:  'bg-g-blue/15 text-g-blue',
   Company: 'bg-g-green/15 text-g-green',
   Partner: 'bg-g-yellow/15 text-g-yellow',
-  Admin: 'bg-g-red/15 text-g-red',
+  Admin:   'bg-g-red/15 text-g-red',
 };
 
 const statusDot = {
-  Active: 'bg-g-green',
+  Active:  'bg-g-green',
   Dormant: 'bg-g-yellow',
   Churned: 'bg-g-red',
 };
 
 export default function Entities() {
-  const [search, setSearch] = useState('');
+  const [entities, setEntities] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [search, setSearch]     = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
 
+  useEffect(() => {
+    fetchSheet('Entities')
+      .then(data => setEntities(data.entities || []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   const filtered = entities.filter(e => {
-    const matchesSearch = e.Name.toLowerCase().includes(search.toLowerCase()) ||
-      e.Email.toLowerCase().includes(search.toLowerCase()) ||
-      e.Industry_Tags.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchesSearch =
+      (e.Name || '').toLowerCase().includes(q) ||
+      (e.Email || '').toLowerCase().includes(q) ||
+      (e.Industry_Tags || '').toLowerCase().includes(q);
     const matchesRole = roleFilter === 'All' || e.Role === roleFilter;
     return matchesSearch && matchesRole;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-text-muted">
+        <Loader2 size={24} className="animate-spin mr-2" />
+        <span className="text-sm">Loading entities…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-g-red text-sm">
+        Failed to load entities: {error}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -78,42 +107,49 @@ export default function Entities() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(entity => (
-              <tr key={entity.Entity_ID} className="border-b border-border last:border-b-0 hover:bg-bg-card-hover transition-colors cursor-pointer">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-g-blue/15 flex items-center justify-center text-g-blue text-xs font-bold">
-                      {entity.Name.split(' ').map(n => n[0]).join('')}
+            {filtered.map(entity => {
+              const initials = (entity.Name || '?')
+                .split(' ')
+                .map(n => n[0] || '')
+                .join('');
+              const tags = (entity.Industry_Tags || '').split(', ').filter(Boolean);
+              return (
+                <tr key={entity.Entity_ID} className="border-b border-border last:border-b-0 hover:bg-bg-card-hover transition-colors cursor-pointer">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-g-blue/15 flex items-center justify-center text-g-blue text-xs font-bold">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-text-primary">{entity.Name}</div>
+                        <div className="text-[10px] text-text-muted">{entity.Entity_ID}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-text-primary">{entity.Name}</div>
-                      <div className="text-[10px] text-text-muted">{entity.Entity_ID}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${roleBadge[entity.Role] || 'bg-white/5 text-text-muted'}`}>
+                      {entity.Role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-text-secondary">{entity.Email}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 flex-wrap">
+                      {tags.map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-text-muted">
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${roleBadge[entity.Role]}`}>
-                    {entity.Role}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-text-secondary">{entity.Email}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1 flex-wrap">
-                    {entity.Industry_Tags.split(', ').map(tag => (
-                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-text-muted">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${statusDot[entity.Status]}`} />
-                    <span className="text-xs text-text-secondary">{entity.Status}</span>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${statusDot[entity.Status] || 'bg-text-muted'}`} />
+                      <span className="text-xs text-text-secondary">{entity.Status}</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 && (
