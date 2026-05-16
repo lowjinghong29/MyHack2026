@@ -9,7 +9,8 @@
  * Main entry: scans emails and calendar events for active linkages.
  */
 function scanInteractions() {
-  const linkages = getSheetData(SHEETS.LINKAGES).filter(l => l.Status === 'Active');
+  // Process all linkages (no Status column in current schema)
+  const linkages = getSheetData(SHEETS.LINKAGES);
   const entities = getSheetData(SHEETS.ENTITIES);
   const entityMap = {};
   entities.forEach(e => entityMap[e.Entity_ID] = e);
