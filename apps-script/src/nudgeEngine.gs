@@ -314,7 +314,7 @@ function tryBuildAINudgeBody(recipient, partner, linkage, daysSince, config) {
 
     const code = response.getResponseCode();
     if (code >= 400) {
-      Logger.log('Gemini HTTP ' + code + ': ' + response.getContentText().slice(0, 200));
+      Logger.log('Gemini HTTP ' + code + ': ' + response.getContentText());
       return null;
     }
 
