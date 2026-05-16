@@ -38,7 +38,7 @@ export async function requestAIMatch(entityId, matchType) {
   // Call Apps Script Gemini matcher (no separate Cloud Function needed)
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: 'aiMatch', entityId, matchType }),
   });
   if (!res.ok) throw new Error('AI match request failed');
@@ -56,7 +56,7 @@ export async function requestAIMatch(entityId, matchType) {
 export async function sendConsent(companyId, mentorId, matchScore, matchReason, linkageType) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       action: 'sendConsent',
       companyId,
@@ -80,7 +80,7 @@ export async function sendConsent(companyId, mentorId, matchScore, matchReason, 
 export async function respondConsent(matchId, responder, decision, reason) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       action: 'respondConsent',
       matchId,
@@ -100,7 +100,7 @@ export async function respondConsent(matchId, responder, decision, reason) {
 export async function addEntity(entity) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: 'addEntity', entity }),
   });
   if (!res.ok) throw new Error('Failed to register entity');
@@ -113,7 +113,7 @@ export async function addEntity(entity) {
 export async function triggerNudgeRun() {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: 'triggerNudgeRun' }),
   });
   if (!res.ok) throw new Error('Failed to trigger nudge run');
@@ -126,7 +126,7 @@ export async function triggerNudgeRun() {
 export async function getLearningStatus() {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: 'getLearningStatus' }),
   });
   if (!res.ok) throw new Error('Failed to fetch learning status');
